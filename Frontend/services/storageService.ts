@@ -1,4 +1,4 @@
-import { User, Product, Order, OrderItem, Comment, Role } from '../types';
+import { User, Product, Order, OrderItem, Comment, Role, OrderStatus } from '../types';
 import { INITIAL_PRODUCTS, INITIAL_USERS, INITIAL_ORDERS, INITIAL_ORDER_ITEMS } from '../constants';
 
 const KEYS = {
@@ -48,7 +48,7 @@ export const StorageService = {
     const users = get<User>(KEYS.USERS);
     const user = users.find(u => u.Email === email && u.PasswordHash === pass);
     if (user) {
-      if (user.IsBlocked) return null; // Blocked user check
+      if (user.IsBlocked) return null;
       localStorage.setItem(KEYS.CURRENT_USER, JSON.stringify(user));
       return user;
     }
@@ -65,7 +65,6 @@ export const StorageService = {
     } as User;
     users.push(newUser);
     set(KEYS.USERS, users);
-    // Only auto-login if it's a client self-registering (not admin creating user)
     if (!user.RoleId || user.RoleId === Role.CLIENT) {
         localStorage.setItem(KEYS.CURRENT_USER, JSON.stringify(newUser));
     }
@@ -78,137 +77,151 @@ export const StorageService = {
   },
   getAllUsers: (): User[] => get<User>(KEYS.USERS),
   updateUser: (user: User) => {
-      const users = get<User>(KEYS.USERS);
-      const idx = users.findIndex(u => u.UserId === user.UserId);
-      if (idx > -1) {
-          users[idx] = user;
-          set(KEYS.USERS, users);
-          // Update session if it's the current user
-          const current = StorageService.getCurrentUser();
-          if(current && current.UserId === user.UserId) {
-              localStorage.setItem(KEYS.CURRENT_USER, JSON.stringify(user));
-          }
+    const users = get<User>(KEYS.USERS);
+    const idx = users.findIndex(u => u.UserId === user.UserId);
+    if (idx > -1) {
+      users[idx] = user;
+      set(KEYS.USERS, users);
+      const current = StorageService.getCurrentUser();
+      if(current && current.UserId === user.UserId) {
+        localStorage.setItem(KEYS.CURRENT_USER, JSON.stringify(user));
       }
+    }
   },
   toggleUserBlock: (userId: number) => {
     const users = get<User>(KEYS.USERS);
     const user = users.find(u => u.UserId === userId);
-    if (user && user.RoleId !== Role.ADMIN) { // Prevent blocking main admin if possible, or just be careful
-        user.IsBlocked = !user.IsBlocked;
-        set(KEYS.USERS, users);
+    if (user && user.RoleId !== Role.ADMIN) {
+      user.IsBlocked = !user.IsBlocked;
+      set(KEYS.USERS, users);
     }
   },
 
   // Orders
-  getOrders: (): Order[] => {
-    const orders = get<Order>(KEYS.ORDERS);
-    const users = get<User>(KEYS.USERS);
-    return orders.map(o => ({
-      ...o,
-      UserName: users.find(u => u.UserId === o.UserId)?.FullName || 'Unknown',
-      AssignedToName: o.AssignedToUserId ? users.find(u => u.UserId === o.AssignedToUserId)?.FullName : undefined
-    })).sort((a, b) => new Date(b.CreatedAt).getTime() - new Date(a.CreatedAt).getTime());
-  },
-  createOrder: (userId: number, items: { product: Product, quantity: number }[]) => {
-    const orders = get<Order>(KEYS.ORDERS);
-    const orderItems = get<OrderItem>(KEYS.ORDER_ITEMS);
-    
-    const total = items.reduce((sum, item) => sum + (item.product.Price * item.quantity), 0);
-    
-    const newOrder: Order = {
-      OrderId: Date.now(),
-      UserId: userId,
-      StatusId: 1, // Created
-      TotalAmount: total,
-      CreatedAt: new Date().toISOString(),
-      UpdatedAt: new Date().toISOString()
-    };
-    
-    orders.push(newOrder);
+getOrders: (): Order[] => {
+  const orders = get<Order>(KEYS.ORDERS);
+  const users = get<User>(KEYS.USERS);
+  return orders.map(o => ({
+    ...o,
+    UserName: users.find(u => u.UserId === o.UserId)?.FullName || 'Unknown',
+    AssignedToName: o.AssignedToUserId ? users.find(u => u.UserId === o.AssignedToUserId)?.FullName : undefined
+  })).sort((a, b) => new Date(b.CreatedAt).getTime() - new Date(a.CreatedAt).getTime());
+},
+
+// Изменение статуса заказа
+updateOrderStatus: (orderId: number, newStatus: OrderStatus) => {
+  const orders = get<Order>(KEYS.ORDERS);
+  const order = orders.find(o => o.OrderId === orderId);
+  if (order) {
+    order.StatusId = newStatus;
+    order.UpdatedAt = new Date().toISOString();
+    set(KEYS.ORDERS, orders);
+  }
+},
+
+createOrder: (userId: number, items: { product: Product, quantity: number }[]) => {
+  const orders = get<Order>(KEYS.ORDERS);
+  const orderItems = get<OrderItem>(KEYS.ORDER_ITEMS);
+
+  const total = items.reduce((sum, item) => sum + (item.product.Price * item.quantity), 0);
+  const lastId = orders.length > 0 ? Math.max(...orders.map(o => o.OrderId)) : 0;
+
+  const newOrder: Order = {
+    OrderId: lastId + 1,
+    UserId: userId,
+    StatusId: OrderStatus.CREATED,
+    TotalAmount: total,
+    CreatedAt: new Date().toISOString(),
+    UpdatedAt: new Date().toISOString()
+  };
+
+  orders.push(newOrder);
+  set(KEYS.ORDERS, orders);
+
+  items.forEach(item => {
+    const lastItemId = orderItems.length > 0 ? Math.max(...orderItems.map(i => i.OrderItemId)) : 0;
+    orderItems.push({
+      OrderItemId: lastItemId + 1,
+      OrderId: newOrder.OrderId,
+      ProductId: item.product.ProductId,
+      Quantity: item.quantity,
+      Price: item.product.Price
+    });
+  });
+  set(KEYS.ORDER_ITEMS, orderItems);
+  return newOrder;
+},
+
+  deleteOrder: (orderId: number) => {
+    const orders = get<Order>(KEYS.ORDERS).filter(o => o.OrderId !== orderId);
     set(KEYS.ORDERS, orders);
 
-    items.forEach(item => {
-      orderItems.push({
-        OrderItemId: Math.random(), // simple mock id
-        OrderId: newOrder.OrderId,
-        ProductId: item.product.ProductId,
-        Quantity: item.quantity,
-        Price: item.product.Price
-      });
-    });
+    const orderItems = get<OrderItem>(KEYS.ORDER_ITEMS).filter(i => i.OrderId !== orderId);
     set(KEYS.ORDER_ITEMS, orderItems);
-    return newOrder;
+
+    const comments = get<Comment>(KEYS.COMMENTS).filter(c => c.OrderId !== orderId);
+    set(KEYS.COMMENTS, comments);
   },
-  updateOrderStatus: (orderId: number, statusId: number) => {
+
+  assignOrder: (orderId: number, userId: number) => {
     const orders = get<Order>(KEYS.ORDERS);
     const order = orders.find(o => o.OrderId === orderId);
     if (order) {
-      order.StatusId = statusId;
-      order.UpdatedAt = new Date().toISOString();
+      order.AssignedToUserId = userId || undefined;
       set(KEYS.ORDERS, orders);
     }
   },
-  assignOrder: (orderId: number, employeeId: number) => {
-    const orders = get<Order>(KEYS.ORDERS);
-    const order = orders.find(o => o.OrderId === orderId);
-    if (order) {
-      order.AssignedToUserId = employeeId;
-      order.UpdatedAt = new Date().toISOString();
-      set(KEYS.ORDERS, orders);
-    }
-  },
+
   getOrderItems: (orderId: number): OrderItem[] => {
-      const items = get<OrderItem>(KEYS.ORDER_ITEMS).filter(i => i.OrderId === orderId);
-      const products = get<Product>(KEYS.PRODUCTS);
-      return items.map(i => ({
-          ...i,
-          ProductName: products.find(p => p.ProductId === i.ProductId)?.Name || 'Deleted Product'
-      }));
+    const items = get<OrderItem>(KEYS.ORDER_ITEMS).filter(i => i.OrderId === orderId);
+    const products = get<Product>(KEYS.PRODUCTS);
+    return items.map(i => ({
+      ...i,
+      ProductName: products.find(p => p.ProductId === i.ProductId)?.Name || 'Deleted Product'
+    }));
   },
 
   // Comments
   getComments: (orderId: number): Comment[] => {
-      const comments = get<Comment>(KEYS.COMMENTS).filter(c => c.OrderId === orderId);
-      const users = get<User>(KEYS.USERS);
-      return comments.map(c => ({
-          ...c,
-          UserName: users.find(u => u.UserId === c.UserId)?.FullName || 'Unknown'
-      })).sort((a,b) => new Date(a.CreatedAt).getTime() - new Date(b.CreatedAt).getTime());
+    const comments = get<Comment>(KEYS.COMMENTS).filter(c => c.OrderId === orderId);
+    const users = get<User>(KEYS.USERS);
+    return comments.map(c => ({
+      ...c,
+      UserName: users.find(u => u.UserId === c.UserId)?.FullName || 'Unknown'
+    })).sort((a,b) => new Date(a.CreatedAt).getTime() - new Date(b.CreatedAt).getTime());
   },
   addComment: (orderId: number, userId: number, text: string) => {
-      const comments = get<Comment>(KEYS.COMMENTS);
-      comments.push({
-          CommentId: Date.now(),
-          OrderId: orderId,
-          UserId: userId,
-          Text: text,
-          CreatedAt: new Date().toISOString()
-      });
-      set(KEYS.COMMENTS, comments);
+    const comments = get<Comment>(KEYS.COMMENTS);
+    comments.push({
+      CommentId: Date.now(),
+      OrderId: orderId,
+      UserId: userId,
+      Text: text,
+      CreatedAt: new Date().toISOString()
+    });
+    set(KEYS.COMMENTS, comments);
   },
 
   // Data Management
-  getFullDatabase: () => {
-    return {
-      users: get<User>(KEYS.USERS),
-      products: get<Product>(KEYS.PRODUCTS),
-      orders: get<Order>(KEYS.ORDERS),
-      orderItems: get<OrderItem>(KEYS.ORDER_ITEMS),
-      comments: get<Comment>(KEYS.COMMENTS),
-    };
-  },
-  
+  getFullDatabase: () => ({
+    users: get<User>(KEYS.USERS),
+    products: get<Product>(KEYS.PRODUCTS),
+    orders: get<Order>(KEYS.ORDERS),
+    orderItems: get<OrderItem>(KEYS.ORDER_ITEMS),
+    comments: get<Comment>(KEYS.COMMENTS),
+  }),
+
   importData: (data: any): boolean => {
-      try {
-          if (data.users && Array.isArray(data.users)) set(KEYS.USERS, data.users);
-          if (data.products && Array.isArray(data.products)) set(KEYS.PRODUCTS, data.products);
-          if (data.orders && Array.isArray(data.orders)) set(KEYS.ORDERS, data.orders);
-          if (data.orderItems && Array.isArray(data.orderItems)) set(KEYS.ORDER_ITEMS, data.orderItems);
-          if (data.comments && Array.isArray(data.comments)) set(KEYS.COMMENTS, data.comments);
-          return true;
-      } catch (e) {
-          console.error("Import failed", e);
-          return false;
-      }
+    try {
+      if (data.users && Array.isArray(data.users)) set(KEYS.USERS, data.users);
+      if (data.products && Array.isArray(data.products)) set(KEYS.PRODUCTS, data.products);
+      if (data.orders && Array.isArray(data.orders)) set(KEYS.ORDERS, data.orders);
+      if (data.orderItems && Array.isArray(data.orderItems)) set(KEYS.ORDER_ITEMS, data.orderItems);
+      if (data.comments && Array.isArray(data.comments)) set(KEYS.COMMENTS, data.comments);
+      return true;
+    } catch (e) {
+      console.error("Import failed", e);
+      return false;
+    }
   }
 };

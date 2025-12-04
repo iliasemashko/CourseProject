@@ -1,8 +1,9 @@
+// Orders.tsx
 import React, { useState, useEffect } from 'react';
 import { User, Order, Role, OrderStatus } from '../types';
 import { StorageService } from '../services/storageService';
 import { STATUS_LABELS, STATUS_COLORS } from '../constants';
-import { FileText, Eye, CheckCircle } from 'lucide-react';
+import { FileText, Eye, CheckCircle, Trash2 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { useNavigate } from 'react-router-dom';
@@ -15,9 +16,7 @@ const Orders: React.FC<OrdersProps> = ({ user }) => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [employees, setEmployees] = useState<User[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  
-  // View mode for employees: 'assigned' (My Work), 'new' (Available), 'all' (All)
-  const [viewMode, setViewMode] = useState<'all' | 'assigned' | 'new'>('assigned'); 
+  const [viewMode, setViewMode] = useState<'all' | 'assigned' | 'new'>('assigned');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -38,22 +37,17 @@ const Orders: React.FC<OrdersProps> = ({ user }) => {
 
   const getDisplayedOrders = () => {
       let result = orders;
-      
-      // Filter by status dropdown
+
       if (statusFilter !== 'all') {
           result = result.filter(o => o.StatusId === Number(statusFilter));
       }
 
-      // Filter by Role/Tab logic
       if (user.RoleId === Role.EMPLOYEE) {
           if (viewMode === 'assigned') {
-             // "My Work": Orders assigned to this user
              result = result.filter(o => o.AssignedToUserId === user.UserId);
           } else if (viewMode === 'new') {
-             // "New Orders": Unassigned orders, generally in CREATED status
              result = result.filter(o => !o.AssignedToUserId && o.StatusId === OrderStatus.CREATED);
           }
-          // 'all' shows everything
       }
 
       return result;
@@ -65,7 +59,7 @@ const Orders: React.FC<OrdersProps> = ({ user }) => {
     const doc = new jsPDF();
     doc.setFontSize(18);
     doc.text('Order Report - SantehOrders', 14, 22);
-    
+
     const tableData = filteredOrders.map(o => [
         o.OrderId,
         o.CreatedAt.split('T')[0],
@@ -87,13 +81,10 @@ const Orders: React.FC<OrdersProps> = ({ user }) => {
   const handleStatusChange = (orderId: number, newStatusStr: string) => {
       const newStatus = Number(newStatusStr);
 
-      // Auto-move logic for Employees
       if (user.RoleId === Role.EMPLOYEE) {
           if (newStatus === OrderStatus.CREATED) {
-              // If moving back to "Created", unassign the order so it goes to "New Orders" tab
-              StorageService.assignOrder(orderId, 0); 
+              StorageService.assignOrder(orderId, 0);
           } else {
-              // If moving to any "active" status, ensure it's assigned to the current user
               StorageService.assignOrder(orderId, user.UserId);
           }
       }
@@ -111,7 +102,14 @@ const Orders: React.FC<OrdersProps> = ({ user }) => {
       StorageService.assignOrder(orderId, user.UserId);
       StorageService.updateOrderStatus(orderId, OrderStatus.PROCESSING);
       refreshOrders();
-      setViewMode('assigned'); // Switch to "My Work" tab
+      setViewMode('assigned');
+  };
+
+  const handleDeleteOrder = (orderId: number) => {
+    if (window.confirm('Вы уверены, что хотите удалить этот заказ?')) {
+        StorageService.deleteOrder(orderId);
+        refreshOrders();
+    }
   };
 
   return (
@@ -218,7 +216,7 @@ const Orders: React.FC<OrdersProps> = ({ user }) => {
                             </select>
                         )}
                     </td>
-                    
+
                     {user.RoleId === Role.ADMIN && (
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                              <select 
@@ -251,6 +249,15 @@ const Orders: React.FC<OrdersProps> = ({ user }) => {
                         >
                             <Eye size={20} />
                         </button>
+                        {user.RoleId === Role.ADMIN && (
+                            <button
+                                onClick={() => handleDeleteOrder(order.OrderId)}
+                                title="Удалить"
+                                className="text-red-600 hover:text-red-900 p-1"
+                            >
+                                <Trash2 size={20} />
+                            </button>
+                        )}
                     </td>
                     </tr>
                 ))
