@@ -1,0 +1,5 @@
+{
+  "name": "SantehOrders",
+  "description": "A comprehensive plumbing supply store management system featuring role-based access (Client, Employee, Admin), order tracking, catalog management, and an AI-powered plumbing assistant.",
+  "requestFramePermissions": []
+}
