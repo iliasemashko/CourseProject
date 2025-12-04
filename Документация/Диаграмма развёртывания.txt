@@ -1,0 +1,51 @@
+@startuml
+skinparam defaultFontSize 100
+skinparam NodeFontSize 30
+skinparam ComponentFontSize 40
+skinparam ArrowFontSize 40
+skinparam artifactFontSize 40
+skinparam wrapWidth 300
+skinparam maxMessageSize 150
+skinparam rectangleMargin 15
+skinparam nodeMargin 15
+skinparam ArrowThickness 5
+skinparam LineThickness 6
+skinparam RectangleBorderThickness 4
+skinparam NodeBorderThickness 4
+skinparam ComponentBorderThickness 4
+skinparam ArtifactBorderThickness 4
+
+node "<<устройство>>\nПользовательский Клиент" as UserClient {
+  node "Браузер" {
+    component "HTML5"
+  }
+}
+
+node "<<устройство>>\nСервер" as Server {
+  node "<<Среда выполнения>>\nDocker Compose" {
+    node "<<Среда выполнения>>\nDocker" as FrontendContainer {
+      node "Frontend" {
+        artifact "Приложение React" <<frontend>>
+      }
+    }
+
+    node "<<Среда выполнения>>\nDocker" as BackendContainer {
+      node "Backend" {
+        artifact "ASP.NET Core API" <<backend>>
+      }
+    }
+
+    node "<<Среда выполнения>>\nDocker" as DBContainer {
+      node "База данных" {
+        artifact "MySQL\nSantehOrders" <<database>>
+      }
+    }
+  }
+}
+
+UserClient --> Server : "HTTP"
+FrontendContainer --> BackendContainer : HTTPS / JSON + JWT
+BackendContainer --> DBContainer : SQL / EF Core
+
+
+@enduml

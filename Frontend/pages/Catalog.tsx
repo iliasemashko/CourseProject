@@ -4,6 +4,8 @@ import { Product, Role, User } from '../types';
 import { StorageService } from '../services/storageService';
 import { Search, Filter, Plus, ShoppingCart, Trash2 } from 'lucide-react';
 
+// Картинка по умолчанию (если у товара нет ImageUrl)
+const defaultImage = 'https://via.placeholder.com/400x400?text=No+Image';
 
 interface CatalogProps {
   user: User | null;
@@ -102,14 +104,14 @@ const Catalog: React.FC<CatalogProps> = ({ user, addToCart }) => {
         {filteredProducts.map(product => (
           <div key={product.ProductId} className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow flex flex-col">
             <div className="aspect-square bg-gray-100 flex items-center justify-center relative">
-                  <img 
-                    src={productImages[product.ProductId] || product1Img} 
-                    alt={product.Name} 
-                    className="w-full h-full object-cover"
-                  />
-               <div className="absolute top-2 right-2 bg-white/90 backdrop-blur px-2 py-1 rounded text-xs font-semibold text-gray-700">
-                 {product.Category}
-               </div>
+              <img 
+                src={product.ImageUrl || defaultImage} 
+                alt={product.Name} 
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute top-2 right-2 bg-white/90 backdrop-blur px-2 py-1 rounded text-xs font-semibold text-gray-700">
+                {product.Category}
+              </div>
             </div>
             <div className="p-4 flex-1 flex flex-col">
               <h3 className="text-lg font-semibold text-gray-900 mb-1">{product.Name}</h3>
@@ -120,36 +122,36 @@ const Catalog: React.FC<CatalogProps> = ({ user, addToCart }) => {
                   <span className="text-2xl font-bold text-gray-900">{product.Price.toLocaleString()} ₽</span>
                   <div className="text-xs text-gray-500 mt-1">
                     {product.Stock > 0 ? (
-                       <span className="text-green-600">В наличии: {product.Stock} шт.</span>
+                      <span className="text-green-600">В наличии: {product.Stock} шт.</span>
                     ) : (
-                       <span className="text-red-500">Нет в наличии</span>
+                      <span className="text-red-500">Нет в наличии</span>
                     )}
                   </div>
                 </div>
 
                 {user?.RoleId === Role.ADMIN ? (
-                   <div className="flex gap-2">
-                     <button 
-                       onClick={() => { setEditingProduct(product); setIsEditMode(true); }}
-                       className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100"
-                     >
-                       Edit
-                     </button>
-                     <button 
-                       onClick={() => handleDeleteProduct(product.ProductId)}
-                       className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100"
-                     >
-                       <Trash2 size={18} />
-                     </button>
-                   </div>
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => { setEditingProduct(product); setIsEditMode(true); }}
+                      className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100"
+                    >
+                      Edit
+                    </button>
+                    <button 
+                      onClick={() => handleDeleteProduct(product.ProductId)}
+                      className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
                 ) : (
                   <button 
                     onClick={() => {
-                        if (!user) {
-                            setShowAuthModal(true);
-                        } else {
-                            addToCart(product);
-                        }
+                      if (!user) {
+                        setShowAuthModal(true);
+                      } else {
+                        addToCart(product);
+                      }
                     }}
                     disabled={product.Stock === 0}
                     className="bg-cyan-600 text-white p-2 rounded-lg hover:bg-cyan-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
@@ -243,7 +245,7 @@ const Catalog: React.FC<CatalogProps> = ({ user, addToCart }) => {
               >
                 Регистрация
               </Link>
-               <Link 
+              <Link 
                 to="/login"
                 className="px-4 py-2 bg-gray-100 text-gray-900 rounded-lg hover:bg-gray-200 transition-colors"
               >

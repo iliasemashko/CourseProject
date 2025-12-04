@@ -54,7 +54,11 @@ const Cart: React.FC<CartProps> = ({ cart, updateQuantity, removeFromCart, clear
                     {cart.map(item => (
                         <div key={item.ProductId} className="bg-white p-4 rounded-xl border border-gray-200 flex gap-4 items-center">
                             <div className="w-20 h-20 bg-gray-100 rounded-lg flex-shrink-0">
-                                <img src={`https://picsum.photos/200/200?random=${item.ProductId}`} className="w-full h-full object-cover rounded-lg" alt="" />
+                                <img 
+                                    src={item.ImageUrl} 
+                                    className="w-full h-full object-cover rounded-lg" 
+                                    alt={item.Name} 
+                                />
                             </div>
                             <div className="flex-1">
                                 <h3 className="font-semibold text-gray-900">{item.Name}</h3>

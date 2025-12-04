@@ -32,6 +32,7 @@ export interface Product {
   Category: string;
   Stock: number;
   CreatedAt: string;
+  ImageUrl?: string; 
 }
 
 export interface OrderItem {

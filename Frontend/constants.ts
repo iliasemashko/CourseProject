@@ -1,12 +1,19 @@
 import { Role, OrderStatus, Product, User, Order, OrderItem } from './types';
 
+const product1 = '/assets/product1.jpg';
+const product2 = '/assets/product2.jpg';
+const product3 = '/assets/product3.jpg';
+const product4 = '/assets/product4.jpg';
+const product5 = '/assets/product5.jpg';
+const product6 = '/assets/product6.jpg';
+
 export const INITIAL_PRODUCTS: Product[] = [
-  { ProductId: 1, Name: 'Смеситель Grohe Eurosmart', Description: 'Однорычажный смеситель для раковины, хром.', Price: 5200, Category: 'Смесители', Stock: 15, CreatedAt: new Date().toISOString() },
-  { ProductId: 2, Name: 'Ванна акриловая Cersanit', Description: 'Прямоугольная ванна 170x70 см, белый.', Price: 12500, Category: 'Ванны', Stock: 5, CreatedAt: new Date().toISOString() },
-  { ProductId: 3, Name: 'Труба полипропиленовая 20мм', Description: 'Армированная стекловолокном, цена за метр.', Price: 85, Category: 'Трубы', Stock: 500, CreatedAt: new Date().toISOString() },
-  { ProductId: 4, Name: 'Унитаз-компакт Roca', Description: 'Безободковый, с сиденьем микролифт.', Price: 9800, Category: 'Санфаянс', Stock: 8, CreatedAt: new Date().toISOString() },
-  { ProductId: 5, Name: 'Полотенцесушитель Водяной', Description: 'М-образный, нержавеющая сталь 50x50.', Price: 2100, Category: 'Отопление', Stock: 20, CreatedAt: new Date().toISOString() },
-  { ProductId: 6, Name: 'Сифон для ванны', Description: 'Полуавтомат, пластик/хром.', Price: 1200, Category: 'Комплектующие', Stock: 45, CreatedAt: new Date().toISOString() },
+   { ProductId: 1, Name: 'Смеситель Grohe Eurosmart', Description: 'Однорычажный смеситель для раковины, хром.', Price: 5200, Category: 'Смесители', Stock: 15, CreatedAt: new Date().toISOString(), ImageUrl: product1 },
+  { ProductId: 2, Name: 'Ванна акриловая Cersanit', Description: 'Прямоугольная ванна 170x70 см, белый.', Price: 12500, Category: 'Ванны', Stock: 5, CreatedAt: new Date().toISOString(), ImageUrl: product2 },
+  { ProductId: 3, Name: 'Труба полипропиленовая 20мм', Description: 'Армированная стекловолокном, цена за метр.', Price: 85, Category: 'Трубы', Stock: 500, CreatedAt: new Date().toISOString(), ImageUrl: product3 },
+  { ProductId: 4, Name: 'Унитаз-компакт Roca', Description: 'Безободковый, с сиденьем микролифт.', Price: 9800, Category: 'Санфаянс', Stock: 8, CreatedAt: new Date().toISOString(), ImageUrl: product4 },
+  { ProductId: 5, Name: 'Полотенцесушитель Водяной', Description: 'М-образный, нержавеющая сталь 50x50.', Price: 2100, Category: 'Отопление', Stock: 20, CreatedAt: new Date().toISOString(), ImageUrl: product5 },
+  { ProductId: 6, Name: 'Сифон для ванны', Description: 'Полуавтомат, пластик/хром.', Price: 1200, Category: 'Комплектующие', Stock: 45, CreatedAt: new Date().toISOString(), ImageUrl: product6 },
 ];
 
 export const INITIAL_USERS: User[] = [

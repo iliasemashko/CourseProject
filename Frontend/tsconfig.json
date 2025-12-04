@@ -25,5 +25,8 @@
     },
     "allowImportingTsExtensions": true,
     "noEmit": true
-  }
+  },
+  "include": [
+    "types.d.ts"  // Убедитесь, что этот файл включён
+  ]
 }
