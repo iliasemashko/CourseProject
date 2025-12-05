@@ -69,3 +69,12 @@ export interface Comment {
 export interface CartItem extends Product {
   quantity: number;
 }
+
+export interface OrderItem {
+  OrderItemId: number;
+  OrderId: number;
+  ProductId: number;
+  Quantity: number;
+  Price: number;
+  Product?: Product;
+}

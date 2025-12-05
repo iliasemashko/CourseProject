@@ -3,20 +3,22 @@ import { Link } from 'react-router-dom';
 import { Product, Role, User } from '../types';
 import { StorageService } from '../services/storageService';
 import { Search, Filter, Plus, ShoppingCart, Trash2 } from 'lucide-react';
+import { getProducts, createProduct, updateProduct, deleteProduct } from '../services/api';
+import { OrderItem } from '../types';
 
 // Картинка по умолчанию (если у товара нет ImageUrl)
 const defaultImage = 'https://via.placeholder.com/400x400?text=No+Image';
 
 interface CatalogProps {
   user: User | null;
-  addToCart: (p: Product) => void;
+  addToCart: (item: OrderItem) => void;
 }
 
 const Catalog: React.FC<CatalogProps> = ({ user, addToCart }) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('Все');
-  
+
   // Admin Edit State
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Partial<Product>>({});
@@ -24,11 +26,21 @@ const Catalog: React.FC<CatalogProps> = ({ user, addToCart }) => {
   // Auth Modal State
   const [showAuthModal, setShowAuthModal] = useState(false);
 
+  // Загрузка продуктов с API
+  const loadProducts = async () => {
+    try {
+      const data = await getProducts();
+      setProducts(data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   useEffect(() => {
-    setProducts(StorageService.getProducts());
+    loadProducts();
   }, []);
 
-  const categories = ['Все', ...Array.from(new Set(products.map(p => p.Category)))];
+  const categories = ['Все', ...Array.from(new Set(products.map(p => p.Category).filter(Boolean)))];
 
   const filteredProducts = products.filter(p => {
     const matchesSearch = p.Name.toLowerCase().includes(searchTerm.toLowerCase());
@@ -36,18 +48,41 @@ const Catalog: React.FC<CatalogProps> = ({ user, addToCart }) => {
     return matchesSearch && matchesCategory;
   });
 
-  const handleSaveProduct = () => {
+  const handleSaveProduct = async () => {
     if (!editingProduct.Name || !editingProduct.Price) return;
-    StorageService.saveProduct(editingProduct as Product);
-    setProducts(StorageService.getProducts());
-    setIsEditMode(false);
-    setEditingProduct({});
+
+    try {
+      if (editingProduct.ProductId) {
+        await updateProduct(editingProduct.ProductId, {
+          Name: editingProduct.Name,
+          Price: editingProduct.Price,
+          Description: editingProduct.Description,
+          Category: editingProduct.Category,
+          Stock: editingProduct.Stock,
+        });
+      } else {
+        await createProduct(
+          editingProduct.Name,
+          editingProduct.Price,
+          undefined
+        );
+      }
+      await loadProducts();
+      setIsEditMode(false);
+      setEditingProduct({});
+    } catch (err) {
+      console.error(err);
+    }
   };
 
-  const handleDeleteProduct = (id: number) => {
-    if (window.confirm('Вы уверены?')) {
-      StorageService.deleteProduct(id);
-      setProducts(StorageService.getProducts());
+  // Удаление продукта
+  const handleDeleteProduct = async (id: number) => {
+    if (!window.confirm('Вы уверены?')) return;
+    try {
+      await deleteProduct(id);
+      await loadProducts();
+    } catch (err) {
+      console.error(err);
     }
   };
 
