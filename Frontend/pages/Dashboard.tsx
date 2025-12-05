@@ -2,11 +2,13 @@ import React, { useEffect, useState, useRef } from 'react';
 import { User, OrderStatus, Role } from '../types';
 import { StorageService } from '../services/storageService';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Users, ShoppingBag, DollarSign, Lock, Unlock, Plus, FileText, Upload } from 'lucide-react';
+import { Users, ShoppingBag, DollarSign, Lock, Unlock, Plus, FileText, Upload, ShoppingCart } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { useNavigate } from 'react-router-dom';
 
 const Dashboard: React.FC = () => {
+    const navigate = useNavigate();
     const [stats, setStats] = useState({
         totalOrders: 0,
         totalRevenue: 0,
@@ -123,6 +125,12 @@ const Dashboard: React.FC = () => {
                 <h1 className="text-3xl font-bold text-gray-900">Панель администратора</h1>
                 
                 <div className="flex gap-3">
+                    <button 
+                        onClick={() => navigate('/cart')}
+                        className="flex items-center gap-2 bg-cyan-600 text-white px-4 py-2 rounded-lg hover:bg-cyan-700 text-sm font-medium transition-colors"
+                    >
+                        <ShoppingCart size={18} /> Корзина
+                    </button>
                     <button 
                         onClick={handleExportPDF}
                         className="flex items-center gap-2 bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 text-sm font-medium transition-colors"

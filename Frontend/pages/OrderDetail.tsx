@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { StorageService } from '../services/storageService';
 import { Order, OrderItem, Comment, User, Role, OrderStatus } from '../types';
 import { STATUS_LABELS, STATUS_COLORS } from '../constants';
 import { ArrowLeft, Send, User as UserIcon, Phone, Mail, CheckCircle } from 'lucide-react';
+import { getOrder, getComments, addComment, updateOrderStatus, getUser } from '../services/api';
 
 interface OrderDetailProps {
     user: User;
@@ -17,70 +17,86 @@ const OrderDetail: React.FC<OrderDetailProps> = ({ user }) => {
     const [comments, setComments] = useState<Comment[]>([]);
     const [newComment, setNewComment] = useState('');
     const [customer, setCustomer] = useState<User | undefined>(undefined);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
 
     useEffect(() => {
         if (!id) return;
         refreshOrder();
     }, [id, user, navigate]);
 
-    const refreshOrder = () => {
+    const refreshOrder = async () => {
         if (!id) return;
-        const orderId = parseInt(id);
-        const orders = StorageService.getOrders();
-        const found = orders.find(o => o.OrderId === orderId);
-        
-        if (found) {
+        setLoading(true);
+        setError('');
+        try {
+            const orderId = parseInt(id);
+            const foundOrder = await getOrder(orderId);
+            
             // Security check for clients
-            if (user.RoleId === Role.CLIENT && found.UserId !== user.UserId) {
+            if (user.RoleId === Role.CLIENT && foundOrder.UserId !== user.UserId) {
                 navigate('/');
                 return;
             }
-            setOrder(found);
-            setItems(StorageService.getOrderItems(orderId));
-            setComments(StorageService.getComments(orderId));
+            
+            setOrder(foundOrder);
+            setItems(foundOrder.Items || []);
+            
+            // Load comments
+            const orderComments = await getComments(orderId);
+            setComments(orderComments);
             
             // Get customer details for employees/admins
             if (user.RoleId !== Role.CLIENT) {
-                const users = StorageService.getAllUsers();
-                setCustomer(users.find(u => u.UserId === found.UserId));
+                const customerData = await getUser(foundOrder.UserId);
+                setCustomer(customerData);
             }
+        } catch (err) {
+            console.error('Error loading order:', err);
+            setError(err instanceof Error ? err.message : 'Ошибка при загрузке заказа');
+        } finally {
+            setLoading(false);
         }
     };
 
-    const handleSendComment = () => {
+    const handleSendComment = async () => {
         if (!newComment.trim() || !order) return;
-        StorageService.addComment(order.OrderId, user.UserId, newComment);
-        setComments(StorageService.getComments(order.OrderId));
-        setNewComment('');
+        try {
+            await addComment(order.OrderId, newComment);
+            setNewComment('');
+            await refreshOrder();
+        } catch (err) {
+            console.error('Error adding comment:', err);
+            alert('Ошибка при добавлении комментария');
+        }
     };
 
-    const handleTakeOrder = () => {
+    const handleTakeOrder = async () => {
         if (!order) return;
-        StorageService.assignOrder(order.OrderId, user.UserId);
-        StorageService.updateOrderStatus(order.OrderId, OrderStatus.PROCESSING);
-        refreshOrder();
+        try {
+            await updateOrderStatus(order.OrderId, OrderStatus.PROCESSING);
+            await refreshOrder();
+        } catch (err) {
+            console.error('Error taking order:', err);
+            alert('Ошибка при принятии заказа');
+        }
     };
 
-    const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const handleStatusChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
         if(!order) return;
         const newStatus = Number(e.target.value);
-
-        // Logic to keep consistency with Orders list behavior
-        if (user.RoleId === Role.EMPLOYEE) {
-            if (newStatus === OrderStatus.CREATED) {
-                // If moving back to "Created", unassign
-                StorageService.assignOrder(order.OrderId, 0); 
-            } else {
-                // If moving to active status, ensure assigned to self
-                StorageService.assignOrder(order.OrderId, user.UserId);
-            }
+        try {
+            await updateOrderStatus(order.OrderId, newStatus);
+            await refreshOrder();
+        } catch (err) {
+            console.error('Error updating status:', err);
+            alert('Ошибка при обновлении статуса');
         }
-
-        StorageService.updateOrderStatus(order.OrderId, newStatus);
-        refreshOrder();
     };
 
-    if (!order) return <div className="p-8 text-center">Загрузка...</div>;
+    if (loading) return <div className="p-8 text-center">Загрузка...</div>;
+    if (error) return <div className="p-8 text-center text-red-600">{error}</div>;
+    if (!order) return <div className="p-8 text-center">Заказ не найден</div>;
 
     return (
         <div className="max-w-4xl mx-auto px-4 py-8">

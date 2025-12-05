@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { StorageService } from '../services/storageService';
 import { User } from '../types';
+import { loginUser, setToken } from '../services/api';
+import { LogIn } from 'lucide-react';
 
 interface LoginProps {
     setUser: (u: User) => void;
@@ -11,26 +12,24 @@ const Login: React.FC<LoginProps> = ({ setUser }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
+        setLoading(true);
         
-        // Manual check for blocked status before generic login to give specific error
-        const users = StorageService.getAllUsers();
-        const found = users.find(u => u.Email === email && u.PasswordHash === password);
-        if (found && found.IsBlocked) {
-            setError('Ваш аккаунт заблокирован. Обратитесь к администратору.');
-            return;
-        }
-
-        const user = StorageService.login(email, password);
-        if (user) {
+        try {
+            const user = await loginUser(email, password);
             setUser(user);
+            // Token уже установлен в loginUser
             navigate('/');
-        } else {
-            setError('Неверный email или пароль');
+        } catch (err) {
+            console.error('Login error:', err);
+            setError(err instanceof Error ? err.message : 'Неверный email или пароль');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -60,8 +59,12 @@ const Login: React.FC<LoginProps> = ({ setUser }) => {
                             onChange={e => setPassword(e.target.value)}
                         />
                     </div>
-                    <button type="submit" className="w-full bg-cyan-600 text-white py-2.5 rounded-lg font-medium hover:bg-cyan-700 transition-colors">
-                        Войти
+                    <button 
+                        type="submit" 
+                        disabled={loading}
+                        className="w-full bg-cyan-600 text-white py-2.5 rounded-lg font-medium hover:bg-cyan-700 disabled:bg-gray-400 transition-colors flex items-center justify-center gap-2"
+                    >
+                        <LogIn size={18} /> {loading ? 'Загрузка...' : 'Войти'}
                     </button>
                 </form>
                 <div className="mt-6 text-center text-sm text-gray-500">

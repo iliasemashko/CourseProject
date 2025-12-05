@@ -16,6 +16,9 @@ export enum OrderStatus {
 export interface User {
   UserId: number;
   RoleId: Role;
+  Surname: string;
+  Name: string;
+  Patronymic?: string;
   FullName: string;
   Email: string;
   Phone?: string;

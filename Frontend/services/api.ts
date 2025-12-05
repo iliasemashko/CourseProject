@@ -26,7 +26,7 @@ export async function registerUser(fullName: string, email: string, password: st
   if (!res.ok) throw new Error(await res.text());
   const data = await res.json();
   setToken(data.token);
-  return { ...data };
+  return transformUser(data);
 }
 
 export async function loginUser(email: string, password: string): Promise<User> {
@@ -38,14 +38,32 @@ export async function loginUser(email: string, password: string): Promise<User> 
   if (!res.ok) throw new Error(await res.text());
   const data = await res.json();
   setToken(data.token);
-  return { ...data };
+  return transformUser(data);
 }
 
 // ---------- Products ----------
 export async function getProducts(): Promise<Product[]> {
   const res = await fetch(`${API_BASE}/products`);
   if (!res.ok) throw new Error(await res.text());
-  return res.json();
+  const data = await res.json();
+  console.log('API Response from /api/products:', data);
+  // Преобразуем camelCase из API в PascalCase для Frontend
+  if (Array.isArray(data)) {
+    return data.map((p: any) => ({
+      ProductId: p.productId || p.ProductId,
+      Name: p.name || p.Name,
+      Description: p.description || p.Description,
+      Price: p.price || p.Price,
+      Category: p.category || p.Category,
+      Stock: p.stock || p.Stock,
+      CreatedAt: p.createdAt || p.CreatedAt || new Date().toISOString(),
+      ImageUrl: p.imageUrl || p.ImageUrl || (p.productId ? `${API_BASE}/products/${p.productId}/image` : undefined),
+      Image: p.image || p.Image,
+      ImageName: p.imageName || p.ImageName,
+      ImageType: p.imageType || p.ImageType,
+    } as Product));
+  }
+  return data;
 }
 
 export async function getProduct(id: number): Promise<Product> {
@@ -100,6 +118,14 @@ export async function getOrders(): Promise<Order[]> {
   return res.json();
 }
 
+export async function getOrder(id: number): Promise<Order> {
+  const res = await fetch(`${API_BASE}/orders/${id}`, {
+    headers: authHeaders(),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
 export async function createOrder(order: Partial<Order>): Promise<Order> {
   const res = await fetch(`${API_BASE}/orders`, {
     method: 'POST',
@@ -117,4 +143,78 @@ export async function updateOrderStatus(orderId: number, statusId: number): Prom
     body: JSON.stringify(statusId),
   });
   if (!res.ok) throw new Error(await res.text());
+}
+
+export async function assignOrder(orderId: number, employeeId: number): Promise<void> {
+  const res = await fetch(`${API_BASE}/orders/${orderId}/assign`, {
+    method: 'PUT',
+    headers: authHeaders(),
+    body: JSON.stringify({ assignedToUserId: employeeId }),
+  });
+  if (!res.ok) throw new Error(await res.text());
+}
+
+export async function deleteOrder(orderId: number): Promise<void> {
+  const res = await fetch(`${API_BASE}/orders/${orderId}`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  });
+  if (!res.ok) throw new Error(await res.text());
+}
+
+// ---------- Comments ----------
+export async function getComments(orderId: number): Promise<any[]> {
+  const res = await fetch(`${API_BASE}/orders/${orderId}/comments`, {
+    headers: authHeaders(),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+export async function addComment(orderId: number, text: string): Promise<any> {
+  const res = await fetch(`${API_BASE}/orders/${orderId}/comments`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify({ text }),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+// ---------- User ----------
+export async function getUser(id: number): Promise<User> {
+  const res = await fetch(`${API_BASE}/auth/user/${id}`, {
+    headers: authHeaders(),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  const data = await res.json();
+  return transformUser(data);
+}
+
+export async function updateUser(user: Partial<User>): Promise<User> {
+  const res = await fetch(`${API_BASE}/auth/user`, {
+    method: 'PUT',
+    headers: authHeaders(),
+    body: JSON.stringify(user),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  const data = await res.json();
+  return transformUser(data);
+}
+
+// Helper function to transform user data (camelCase to PascalCase)
+function transformUser(data: any): User {
+  return {
+    UserId: data.userId || data.UserId,
+    RoleId: data.roleId || data.RoleId,
+    Surname: data.surname || data.Surname,
+    Name: data.name || data.Name,
+    Patronymic: data.patronymic || data.Patronymic,
+    FullName: data.fullName || data.FullName,
+    Email: data.email || data.Email,
+    Phone: data.phone || data.Phone,
+    PasswordHash: data.passwordHash || data.PasswordHash,
+    CreatedAt: data.createdAt || data.CreatedAt,
+    IsBlocked: data.isBlocked || data.IsBlocked,
+  };
 }

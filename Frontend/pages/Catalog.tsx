@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Product, Role, User, OrderItem } from '../types';
+import { Product, Role, User, CartItem } from '../types';
 import { Search, Filter, Plus, ShoppingCart, Trash2, Edit } from 'lucide-react';
 import { getProducts, createProduct, updateProduct, deleteProduct } from '../services/api';
 
 // Картинка по умолчанию (если у товара нет ImageUrl)
-const defaultImage = 'https://via.placeholder.com/400x400?text=No+Image';
+const defaultImage = '/assets/product1.jpg';
 
 interface CatalogProps {
   user: User | null;
-  addToCart: (item: OrderItem) => void;
+  addToCart: (item: CartItem | Product) => void;
 }
 
 const Catalog: React.FC<CatalogProps> = ({ user, addToCart }) => {
@@ -32,6 +32,7 @@ const Catalog: React.FC<CatalogProps> = ({ user, addToCart }) => {
     setError(null);
     try {
       const data = await getProducts();
+      console.log('Loaded products in Catalog:', data);
       setProducts(data);
     } catch (err) {
       console.error('Ошибка загрузки продуктов:', err);
@@ -133,24 +134,26 @@ const filteredProducts = products.filter(p => {
     }
   };
 
-  // Добавление в корзину - конвертируем Product в OrderItem
+  // Добавление в корзину - конвертируем Product в CartItem
   const handleAddToCart = (product: Product) => {
-    const orderItem: OrderItem = {
-      OrderItemId: 0, // Временное значение
-      OrderId: 0, // Временное значение
-      ProductId: product.ProductId,
-      Quantity: 1,
-      Price: product.Price,
-      Product: product
-    };
-    addToCart(orderItem);
+    addToCart(product);
   };
 
   // Получить URL изображения продукта
   const getImageUrl = (product: Product) => {
-    if (product.Image || product.ProductId) {
-      return `http://localhost:5114/api/products/${product.ProductId}/image`;
+    // Если сервер отдаёт полный URL в ImageUrl — используем его
+    if (product.ImageUrl) {
+      if (product.ImageUrl.startsWith('http') || product.ImageUrl.startsWith('data:')) {
+        return product.ImageUrl;
+      }
+      // Если в ImageUrl хранится относительный путь или имя файла, попробуем получить изображение по API
+      if (product.ProductId) return `http://localhost:5114/api/products/${product.ProductId}/image`;
+      return defaultImage;
     }
+
+    // Если бекенд хранит/отдаёт бинарные данные в поле Image — используем эндпоинт по id
+    if (product.ProductId) return `http://localhost:5114/api/products/${product.ProductId}/image`;
+
     return defaultImage;
   };
 
@@ -236,16 +239,16 @@ const filteredProducts = products.filter(p => {
   </div>
 ) : (
   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-    {filteredProducts.map(product => {
+    {filteredProducts.map((product, index) => {
       const price = product.Price ?? 0;
       const stock = product.Stock ?? 0;
       const name = product.Name || 'Без названия';
       const description = product.Description || 'Описание отсутствует';
-      const imageUrl = product.ImageUrl || defaultImage;
+      const imageUrl = getImageUrl(product);
       const category = product.Category;
 
       return (
-        <div key={product.ProductId} className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow flex flex-col">
+        <div key={product.ProductId ? `product-${product.ProductId}` : `product-${index}`} className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow flex flex-col">
           <div className="aspect-square bg-gray-100 flex items-center justify-center relative">
             <img 
               src={imageUrl} 

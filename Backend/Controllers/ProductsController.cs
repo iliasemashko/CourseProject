@@ -11,10 +11,12 @@ namespace SantehOrders.API.Controllers
     public class ProductsController : ControllerBase
     {
         private readonly SantehContext _context;
+        private readonly IWebHostEnvironment _environment;
 
-        public ProductsController(SantehContext context)
+        public ProductsController(SantehContext context, IWebHostEnvironment environment)
         {
             _context = context;
+            _environment = environment;
         }
 
         /// <summary>
@@ -52,12 +54,21 @@ namespace SantehOrders.API.Controllers
 
             if (image != null)
             {
-                using var ms = new MemoryStream();
-                await image.CopyToAsync(ms);
-
-                product.Image = ms.ToArray();
-                product.ImageName = image.FileName;
+                // Сохранить изображение в файловую систему
+                var uploadsFolder = Path.Combine(_environment.WebRootPath, "images", "products");
+                Directory.CreateDirectory(uploadsFolder);
+                
+                var fileName = $"{Guid.NewGuid()}_{image.FileName}";
+                var filePath = Path.Combine(uploadsFolder, fileName);
+                
+                using (var fileStream = new FileStream(filePath, FileMode.Create))
+                {
+                    await image.CopyToAsync(fileStream);
+                }
+                
+                product.ImageName = fileName;
                 product.ImageType = image.ContentType;
+                // Image поле оставляем пустым (используем файловую систему)
             }
 
             _context.Products.Add(product);
@@ -116,18 +127,19 @@ namespace SantehOrders.API.Controllers
         /// Получить изображение продукта
         /// </summary>
         [HttpGet("{id}/image")]
-        public async Task<IActionResult> GetImage(int id)
+        public IActionResult GetImage(int id)
         {
-            var p = await _context.Products.FindAsync(id);
+            var p = _context.Products.Find(id);
 
-            if (p == null || p.Image == null)
+            if (p == null || string.IsNullOrEmpty(p.ImageName))
                 return NotFound();
 
-            return File(
-                p.Image,
-                p.ImageType ?? "application/octet-stream",
-                p.ImageName
-            );
+            var imagePath = Path.Combine(_environment.WebRootPath, "images", "products", p.ImageName);
+            if (!System.IO.File.Exists(imagePath))
+                return NotFound();
+
+            var fileStream = System.IO.File.OpenRead(imagePath);
+            return File(fileStream, p.ImageType ?? "image/jpeg", p.ImageName);
         }
     }
 }

@@ -22,13 +22,21 @@ builder.Services.AddSwaggerGen(c =>
         Scheme = "bearer",
         BearerFormat = "JWT",
         In = ParameterLocation.Header,
-        Description = "Enter 'Bearer {token}'"
+        Description = "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
+        Reference = new OpenApiReference
+        {
+            Type = ReferenceType.SecurityScheme,
+            Id = "Bearer"
+        }
     };
 
     c.AddSecurityDefinition("Bearer", jwtScheme);
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
-        { jwtScheme, new string[] { } }
+        {
+            jwtScheme,
+            new string[] { }
+        }
     });
 });
 
@@ -41,7 +49,7 @@ builder.Services.AddDbContext<SantehContext>(options =>
 
 // JWT Authentication
 var jwtSection = configuration.GetSection("Jwt");
-var key = Encoding.UTF8.GetBytes(jwtSection["Key"]!);
+var key = Encoding.UTF8.GetBytes(configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT Key not configured"));
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -49,14 +57,16 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
-            ValidIssuer = jwtSection["Issuer"],
+            ValidIssuer = configuration["Jwt:Issuer"],
             ValidateAudience = true,
-            ValidAudience = jwtSection["Audience"],
+            ValidAudience = configuration["Jwt:Audience"],
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(key)
+            IssuerSigningKey = new SymmetricSecurityKey(key),
+            ClockSkew = TimeSpan.FromMinutes(5) // Допуск 5 минут для разницы в часах
         };
     });
+
 
 builder.Services.AddAuthorization();
 
@@ -81,6 +91,7 @@ if (app.Environment.IsDevelopment())
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "SantehOrders API v1");
         c.RoutePrefix = string.Empty; // Swagger доступен по /
+        c.DefaultModelsExpandDepth(0); // Скрыть Models раздел
     });
 }
 
