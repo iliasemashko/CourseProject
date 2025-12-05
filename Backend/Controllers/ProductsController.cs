@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using SantehOrders.API.Models;
 using SantehOrders.API.Data;
-using Microsoft.EntityFrameworkCore;
 
 namespace SantehOrders.API.Controllers
 {
@@ -17,17 +17,36 @@ namespace SantehOrders.API.Controllers
             _context = context;
         }
 
+        /// <summary>
+        /// Получить все продукты
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> GetAll()
+        {
+            var products = await _context.Products.ToListAsync();
+            return Ok(products);
+        }
+
+        /// <summary>
+        /// Создать новый продукт
+        /// </summary>
         [HttpPost]
         [Authorize]
         public async Task<IActionResult> Create(
             [FromForm] string name,
             [FromForm] decimal price,
+            [FromForm] string? description,
+            [FromForm] string? category,
+            [FromForm] int? stock,
             [FromForm] IFormFile? image)
         {
             var product = new Product
             {
                 Name = name,
                 Price = price,
+                Description = description ?? "",
+                Category = category ?? "",
+                Stock = stock ?? 0,
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -47,6 +66,9 @@ namespace SantehOrders.API.Controllers
             return CreatedAtAction(nameof(Get), new { id = product.ProductId }, product);
         }
 
+        /// <summary>
+        /// Получить продукт по ID
+        /// </summary>
         [HttpGet("{id}")]
         public async Task<IActionResult> Get(int id)
         {
@@ -55,6 +77,9 @@ namespace SantehOrders.API.Controllers
             return Ok(p);
         }
 
+        /// <summary>
+        /// Обновить продукт
+        /// </summary>
         [HttpPut("{id}")]
         [Authorize]
         public async Task<IActionResult> Update(int id, [FromBody] Product changed)
@@ -72,6 +97,9 @@ namespace SantehOrders.API.Controllers
             return NoContent();
         }
 
+        /// <summary>
+        /// Удалить продукт
+        /// </summary>
         [HttpDelete("{id}")]
         [Authorize]
         public async Task<IActionResult> Delete(int id)
@@ -84,6 +112,9 @@ namespace SantehOrders.API.Controllers
             return NoContent();
         }
 
+        /// <summary>
+        /// Получить изображение продукта
+        /// </summary>
         [HttpGet("{id}/image")]
         public async Task<IActionResult> GetImage(int id)
         {
@@ -98,13 +129,5 @@ namespace SantehOrders.API.Controllers
                 p.ImageName
             );
         }
-
-        [HttpGet]
-        public async Task<IActionResult> Get()
-        {
-            var products = await _context.Products.ToListAsync();
-            return Ok(products);
-        }
-
     }
 }

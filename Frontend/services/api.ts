@@ -42,6 +42,11 @@ export async function loginUser(email: string, password: string): Promise<User> 
 }
 
 // ---------- Products ----------
+export async function getProducts(): Promise<Product[]> {
+  const res = await fetch(`${API_BASE}/products`);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
 
 export async function getProduct(id: number): Promise<Product> {
   const res = await fetch(`${API_BASE}/products/${id}`);
@@ -49,19 +54,15 @@ export async function getProduct(id: number): Promise<Product> {
   return res.json();
 }
 
-export async function getProducts(): Promise<Product[]> {
-    const res = await fetch('/api/products');
-    if (!res.ok) {
-        throw new Error('Ошибка при получении товаров');
-    }
-    return res.json();
-}
-
 export async function createProduct(product: Partial<Product>, imageFile?: File): Promise<Product> {
   if (!jwtToken) throw new Error("Not authenticated");
+  
   const formData = new FormData();
   if (product.Name) formData.append('name', product.Name);
   if (product.Price != null) formData.append('price', product.Price.toString());
+  if (product.Description) formData.append('description', product.Description);
+  if (product.Category) formData.append('category', product.Category);
+  if (product.Stock != null) formData.append('stock', product.Stock.toString());
   if (imageFile) formData.append('image', imageFile);
   
   const res = await fetch(`${API_BASE}/products`, {

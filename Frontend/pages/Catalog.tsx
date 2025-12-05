@@ -35,7 +35,38 @@ const Catalog: React.FC<CatalogProps> = ({ user, addToCart }) => {
       setProducts(data);
     } catch (err) {
       console.error('Ошибка загрузки продуктов:', err);
-      setError('Не удалось загрузить продукты');
+      setError('Не удалось загрузить продукты. Проверьте, что сервер запущен на http://localhost:5114');
+      
+      // Временные тестовые данные для разработки
+      setProducts([
+        {
+          ProductId: 1,
+          Name: 'Смеситель для ванной',
+          Description: 'Современный хромированный смеситель',
+          Price: 5000,
+          Category: 'Смесители',
+          Stock: 10,
+          CreatedAt: new Date().toISOString(),
+        },
+        {
+          ProductId: 2,
+          Name: 'Раковина керамическая',
+          Description: 'Белая керамическая раковина 60см',
+          Price: 3500,
+          Category: 'Раковины',
+          Stock: 5,
+          CreatedAt: new Date().toISOString(),
+        },
+        {
+          ProductId: 3,
+          Name: 'Унитаз напольный',
+          Description: 'Унитаз с микролифтом',
+          Price: 8000,
+          Category: 'Унитазы',
+          Stock: 3,
+          CreatedAt: new Date().toISOString(),
+        },
+      ]);
     } finally {
       setLoading(false);
     }
@@ -47,11 +78,13 @@ const Catalog: React.FC<CatalogProps> = ({ user, addToCart }) => {
 
   const categories = ['Все', ...Array.from(new Set(products.map(p => p.Category).filter(Boolean)))];
 
-  const filteredProducts = products.filter(p => {
-    const matchesSearch = p.Name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'Все' || p.Category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+const filteredProducts = products.filter(p => {
+  const name = p.Name || '';
+  const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase());
+  const matchesCategory = selectedCategory === 'Все' || p.Category === selectedCategory;
+  return matchesSearch && matchesCategory;
+});
+
 
   const handleSaveProduct = async () => {
     if (!editingProduct.Name || !editingProduct.Price) {
@@ -111,6 +144,14 @@ const Catalog: React.FC<CatalogProps> = ({ user, addToCart }) => {
       Product: product
     };
     addToCart(orderItem);
+  };
+
+  // Получить URL изображения продукта
+  const getImageUrl = (product: Product) => {
+    if (product.Image || product.ProductId) {
+      return `http://localhost:5114/api/products/${product.ProductId}/image`;
+    }
+    return defaultImage;
   };
 
   if (loading) {
@@ -190,85 +231,86 @@ const Catalog: React.FC<CatalogProps> = ({ user, addToCart }) => {
 
       {/* Grid */}
       {filteredProducts.length === 0 ? (
-        <div className="text-center py-12">
-          <p className="text-gray-500 text-lg">Товары не найдены</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredProducts.map(product => (
-            <div key={product.ProductId} className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow flex flex-col">
-              <div className="aspect-square bg-gray-100 flex items-center justify-center relative">
-                <img 
-                  src={product.ImageUrl || defaultImage} 
-                  alt={product.Name} 
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    e.currentTarget.src = defaultImage;
-                  }}
-                />
-                {product.Category && (
-                  <div className="absolute top-2 right-2 bg-white/90 backdrop-blur px-2 py-1 rounded text-xs font-semibold text-gray-700">
-                    {product.Category}
-                  </div>
-                )}
-              </div>
-              <div className="p-4 flex-1 flex flex-col">
-                <h3 className="text-lg font-semibold text-gray-900 mb-1">{product.Name}</h3>
-                <p className="text-gray-500 text-sm mb-4 line-clamp-2 flex-1">
-                  {product.Description || 'Описание отсутствует'}
-                </p>
-                
-                <div className="flex items-end justify-between mt-auto">
-                  <div>
-                    <span className="text-2xl font-bold text-gray-900">{product.Price.toLocaleString()} ₽</span>
-                    <div className="text-xs text-gray-500 mt-1">
-                      {product.Stock > 0 ? (
-                        <span className="text-green-600">В наличии: {product.Stock} шт.</span>
-                      ) : (
-                        <span className="text-red-500">Нет в наличии</span>
-                      )}
-                    </div>
-                  </div>
+  <div className="text-center py-12">
+    <p className="text-gray-500 text-lg">Товары не найдены</p>
+  </div>
+) : (
+  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+    {filteredProducts.map(product => {
+      const price = product.Price ?? 0;
+      const stock = product.Stock ?? 0;
+      const name = product.Name || 'Без названия';
+      const description = product.Description || 'Описание отсутствует';
+      const imageUrl = product.ImageUrl || defaultImage;
+      const category = product.Category;
 
-                  {user?.RoleId === Role.ADMIN ? (
-                    <div className="flex gap-2">
-                      <button 
-                        onClick={() => { setEditingProduct(product); setIsEditMode(true); }}
-                        className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
-                        title="Редактировать"
-                      >
-                        <Edit size={18} />
-                      </button>
-                      <button 
-                        onClick={() => handleDeleteProduct(product.ProductId)}
-                        className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
-                        title="Удалить"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
+      return (
+        <div key={product.ProductId} className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow flex flex-col">
+          <div className="aspect-square bg-gray-100 flex items-center justify-center relative">
+            <img 
+              src={imageUrl} 
+              alt={name} 
+              className="w-full h-full object-cover"
+              onError={(e) => { e.currentTarget.src = defaultImage; }}
+            />
+            {category && (
+              <div className="absolute top-2 right-2 bg-white/90 backdrop-blur px-2 py-1 rounded text-xs font-semibold text-gray-700">
+                {category}
+              </div>
+            )}
+          </div>
+          <div className="p-4 flex-1 flex flex-col">
+            <h3 className="text-lg font-semibold text-gray-900 mb-1">{name}</h3>
+            <p className="text-gray-500 text-sm mb-4 line-clamp-2 flex-1">{description}</p>
+            <div className="flex items-end justify-between mt-auto">
+              <div>
+                <span className="text-2xl font-bold text-gray-900">{price.toLocaleString()} ₽</span>
+                <div className="text-xs text-gray-500 mt-1">
+                  {stock > 0 ? (
+                    <span className="text-green-600">В наличии: {stock} шт.</span>
                   ) : (
-                    <button 
-                      onClick={() => {
-                        if (!user) {
-                          setShowAuthModal(true);
-                        } else {
-                          handleAddToCart(product);
-                        }
-                      }}
-                      disabled={product.Stock === 0}
-                      className="bg-cyan-600 text-white p-2 rounded-lg hover:bg-cyan-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
-                      title="Добавить в корзину"
-                    >
-                      <ShoppingCart size={20} />
-                    </button>
+                    <span className="text-red-500">Нет в наличии</span>
                   )}
                 </div>
               </div>
+              {user?.RoleId === Role.ADMIN ? (
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => { setEditingProduct(product); setIsEditMode(true); }}
+                    className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
+                    title="Редактировать"
+                  >
+                    <Edit size={18} />
+                  </button>
+                  <button 
+                    onClick={() => handleDeleteProduct(product.ProductId)}
+                    className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
+                    title="Удалить"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                </div>
+              ) : (
+                <button 
+                  onClick={() => {
+                    if (!user) setShowAuthModal(true);
+                    else handleAddToCart(product);
+                  }}
+                  disabled={stock === 0}
+                  className="bg-cyan-600 text-white p-2 rounded-lg hover:bg-cyan-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                  title="Добавить в корзину"
+                >
+                  <ShoppingCart size={20} />
+                </button>
+              )}
             </div>
-          ))}
+          </div>
         </div>
-      )}
+      )
+    })}
+  </div>
+)}
+
 
       {/* Admin Modal */}
       {isEditMode && (

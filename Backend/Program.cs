@@ -60,6 +60,18 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 
+// ============ CORS - КРИТИЧЕСКИ ВАЖНО! ============
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins("http://localhost:3000", "http://localhost:5173") // Vite/React порты
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials();
+    });
+});
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -71,6 +83,9 @@ if (app.Environment.IsDevelopment())
         c.RoutePrefix = string.Empty; // Swagger доступен по /
     });
 }
+
+// ============ UseCors ДОЛЖЕН БЫТЬ ПЕРЕД Authentication/Authorization! ============
+app.UseCors("AllowFrontend");
 
 app.UseHttpsRedirection();
 app.UseAuthentication();

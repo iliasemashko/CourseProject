@@ -19,7 +19,7 @@ export interface User {
   FullName: string;
   Email: string;
   Phone?: string;
-  PasswordHash?: string; // In a real app, never store/send this to frontend
+  PasswordHash?: string;
   CreatedAt: string;
   IsBlocked?: boolean;
 }
@@ -32,7 +32,10 @@ export interface Product {
   Category: string;
   Stock: number;
   CreatedAt: string;
-  ImageUrl?: string; 
+  ImageUrl?: string;
+  Image?: Uint8Array;
+  ImageName?: string;
+  ImageType?: string;
 }
 
 export interface OrderItem {
@@ -41,7 +44,7 @@ export interface OrderItem {
   ProductId: number;
   Quantity: number;
   Price: number;
-  ProductName?: string; // Joined field for UI
+  Product?: Product;
 }
 
 export interface Order {
@@ -51,10 +54,10 @@ export interface Order {
   TotalAmount: number;
   CreatedAt: string;
   UpdatedAt: string;
-  UserName?: string; // Joined field for UI
+  UserName?: string;
   Items?: OrderItem[];
-  AssignedToUserId?: number; // Employee ID
-  AssignedToName?: string; // Employee Name for UI
+  AssignedToUserId?: number;
+  AssignedToName?: string;
 }
 
 export interface Comment {
@@ -68,13 +71,4 @@ export interface Comment {
 
 export interface CartItem extends Product {
   quantity: number;
-}
-
-export interface OrderItem {
-  OrderItemId: number;
-  OrderId: number;
-  ProductId: number;
-  Quantity: number;
-  Price: number;
-  Product?: Product;
 }
