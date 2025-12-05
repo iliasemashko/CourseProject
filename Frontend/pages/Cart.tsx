@@ -16,6 +16,8 @@ const Cart: React.FC<CartProps> = ({ cart, updateQuantity, removeFromCart, clear
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+        const [showSuccessModal, setShowSuccessModal] = useState(false);
+        const [createdOrderId, setCreatedOrderId] = useState<number | null>(null);
     const total = cart.reduce((sum, item) => sum + (item.Price * item.quantity), 0);
 
     const handleCheckout = async () => {
@@ -40,9 +42,10 @@ const Cart: React.FC<CartProps> = ({ cart, updateQuantity, removeFromCart, clear
                 Items: orderItems,
             };
 
-            const order = await createOrder(orderData);
+            const order = await createOrder(orderData as any);
             clearCart();
-            navigate(`/orders/${order.OrderId}`, { state: { message: 'Заказ успешно создан!' } });
+                setCreatedOrderId(order.OrderId);
+                setShowSuccessModal(true);
         } catch (err) {
             console.error('Checkout error:', err);
             setError(err instanceof Error ? err.message : 'Ошибка при создании заказа');
@@ -129,6 +132,19 @@ const Cart: React.FC<CartProps> = ({ cart, updateQuantity, removeFromCart, clear
                     </button>
                 </div>
             </div>
+                {showSuccessModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center">
+                        <div className="absolute inset-0 bg-black opacity-40" onClick={() => setShowSuccessModal(false)}></div>
+                        <div className="relative bg-white rounded-xl shadow-lg p-6 max-w-sm w-full z-60">
+                            <h2 className="text-lg font-bold mb-2">Заказ успешно оформлен</h2>
+                            <p className="text-gray-600 mb-4">Ваш заказ #{createdOrderId} успешно создан. Спасибо!</p>
+                            <div className="flex gap-2 justify-end">
+                                <button onClick={() => { setShowSuccessModal(false); navigate('/orders'); }} className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300">К заказам</button>
+                                <button onClick={() => { setShowSuccessModal(false); if (createdOrderId) navigate(`/orders/${createdOrderId}`); }} className="px-4 py-2 rounded-lg bg-cyan-600 text-white hover:bg-cyan-700">Перейти к заказу</button>
+                            </div>
+                        </div>
+                    </div>
+                )}
         </div>
     );
 };

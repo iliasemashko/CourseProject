@@ -85,6 +85,15 @@ builder.Services.AddCors(options =>
               .AllowAnyHeader()
               .AllowCredentials();
     });
+
+    // Development override: allow all origins (to avoid local dev CORS issues)
+    options.AddPolicy("DevAllowAll", policy =>
+    {
+        policy.SetIsOriginAllowed(_ => true)
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials();
+    });
 });
 
 var app = builder.Build();
@@ -101,7 +110,15 @@ if (app.Environment.IsDevelopment())
 }
 
 // ============ UseCors ДОЛЖЕН БЫТЬ ПЕРЕД Authentication/Authorization! ============
-app.UseCors("AllowFrontend");
+// Use restrictive policy in production, but enable a liberal policy in Development to avoid CORS issues during local testing
+if (app.Environment.IsDevelopment())
+{
+    app.UseCors("DevAllowAll");
+}
+else
+{
+    app.UseCors("AllowFrontend");
+}
 
 app.UseHttpsRedirection();
 app.UseAuthentication();
