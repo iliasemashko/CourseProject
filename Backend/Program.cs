@@ -76,7 +76,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ClockSkew = TimeSpan.FromMinutes(5)
         };
 
-        // Добавьте это для логирования
         options.Events = new JwtBearerEvents
         {
             OnAuthenticationFailed = context =>
@@ -100,29 +99,31 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             }
         };
     });
-    
+
 builder.Services.AddAuthorization();
 
-// ============ CORS - КРИТИЧЕСКИ ВАЖНО! ============
+// ============ CORS - ИСПРАВЛЕНО! ============
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowFrontend", policy =>
+    // Для разработки - разрешаем ВСЕ origins
+    options.AddPolicy("DevAllowAll", policy =>
     {
-        // Allow common dev front-end ports and both http/https variants for local testing
-        policy.WithOrigins(
-                "http://localhost:3000", "https://localhost:3000",
-                "http://localhost:3001", "https://localhost:3001",
-                "http://localhost:5173", "https://localhost:5173"
-            )
+        policy.SetIsOriginAllowed(_ => true) // Разрешить любой origin
               .AllowAnyMethod()
               .AllowAnyHeader()
               .AllowCredentials();
     });
 
-    // Development override: allow all origins (to avoid local dev CORS issues)
-    options.AddPolicy("DevAllowAll", policy =>
+    // Для продакшена - конкретные origins
+    options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.SetIsOriginAllowed(_ => true)
+        policy.WithOrigins(
+                "http://localhost:3000", "https://localhost:3000",
+                "http://localhost:3001", "https://localhost:3001",
+                "http://localhost:5173", "https://localhost:5173",
+                "http://localhost:5174", "https://localhost:5174",
+                "http://127.0.0.1:3000", "http://127.0.0.1:5173"
+            )
               .AllowAnyMethod()
               .AllowAnyHeader()
               .AllowCredentials();
@@ -137,24 +138,21 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(c =>
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "SantehOrders API v1");
-        c.RoutePrefix = string.Empty; // Swagger доступен по /
-        c.DefaultModelsExpandDepth(0); // Скрыть Models раздел
+        c.RoutePrefix = string.Empty;
+        c.DefaultModelsExpandDepth(0);
     });
 }
 
-// ============ UseCors ДОЛЖЕН БЫТЬ ПЕРЕД Authentication/Authorization! ============
-// Use restrictive policy in production, but enable a liberal policy in Development to avoid CORS issues during local testing
-if (app.Environment.IsDevelopment())
-{
-    app.UseCors("DevAllowAll");
-}
-else
-{
-    app.UseCors("AllowFrontend");
-}
+// ============ ВАЖНО: CORS должен быть ПЕРЕД Authentication/Authorization! ============
+app.UseCors("DevAllowAll"); // В разработке всегда используем DevAllowAll
 
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+
+Console.WriteLine("🚀 Server started!");
+Console.WriteLine($"📍 Environment: {app.Environment.EnvironmentName}");
+Console.WriteLine($"🔓 CORS Policy: DevAllowAll (all origins allowed)");
+
 app.Run();

@@ -40,17 +40,9 @@ namespace SantehOrders.API.Controllers
         }
 
         [HttpGet("{id}")]
-        [Authorize]
         public async Task<IActionResult> GetById(int id)
         {
-            var order = await _context.Orders
-                .Include(o => o.Items)
-                .ThenInclude(i => i.Product)
-                .Include(o => o.Status)
-                .FirstOrDefaultAsync(o => o.OrderId == id);
-
-            if (order == null)
-                return NotFound(new { message = "Заказ не найден" });
+            var order = await _context.Orders.FirstOrDefaultAsync(o => o.OrderId == id);
 
             return Ok(order);
         }
