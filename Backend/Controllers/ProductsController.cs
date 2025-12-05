@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SantehOrders.API.Models;
 using SantehOrders.API.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace SantehOrders.API.Controllers
 {
@@ -97,5 +98,13 @@ namespace SantehOrders.API.Controllers
                 p.ImageName
             );
         }
+
+        [HttpGet]
+        public async Task<IActionResult> Get()
+        {
+            var products = await _context.Products.ToListAsync();
+            return Ok(products);
+        }
+
     }
 }

@@ -42,16 +42,19 @@ export async function loginUser(email: string, password: string): Promise<User> 
 }
 
 // ---------- Products ----------
-export async function getProducts(): Promise<Product[]> {
-  const res = await fetch(`${API_BASE}/products`);
-  if (!res.ok) throw new Error(await res.text());
-  return res.json();
-}
 
 export async function getProduct(id: number): Promise<Product> {
   const res = await fetch(`${API_BASE}/products/${id}`);
   if (!res.ok) throw new Error(await res.text());
   return res.json();
+}
+
+export async function getProducts(): Promise<Product[]> {
+    const res = await fetch('/api/products');
+    if (!res.ok) {
+        throw new Error('Ошибка при получении товаров');
+    }
+    return res.json();
 }
 
 export async function createProduct(product: Partial<Product>, imageFile?: File): Promise<Product> {
