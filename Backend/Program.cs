@@ -75,7 +75,12 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:3000", "http://localhost:5173") // Vite/React порты
+        // Allow common dev front-end ports and both http/https variants for local testing
+        policy.WithOrigins(
+                "http://localhost:3000", "https://localhost:3000",
+                "http://localhost:3001", "https://localhost:3001",
+                "http://localhost:5173", "https://localhost:5173"
+            )
               .AllowAnyMethod()
               .AllowAnyHeader()
               .AllowCredentials();
