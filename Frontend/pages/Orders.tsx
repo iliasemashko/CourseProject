@@ -61,13 +61,13 @@ const Orders: React.FC<OrdersProps> = ({ user }) => {
     doc.text('Order Report - SantehOrders', 14, 22);
 
     const tableData = filteredOrders.map(o => [
-        o.OrderId,
+        o.OrderId.toString(),
         o.CreatedAt.split('T')[0],
-        o.UserName,
+        o.UserName || '',
         o.TotalAmount + ' RUB',
-        STATUS_LABELS[o.StatusId],
+        STATUS_LABELS[o.StatusId] || 'Unknown',
         o.AssignedToName || 'Unassigned'
-    ]);
+    ]) as string[][];
 
     autoTable(doc, {
         head: [['ID', 'Date', 'Customer', 'Total', 'Status', 'Assigned To']],

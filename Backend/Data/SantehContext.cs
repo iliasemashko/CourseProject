@@ -1,0 +1,44 @@
+using Microsoft.EntityFrameworkCore;
+using SantehOrders.API.Models;
+
+
+namespace SantehOrders.API.Data {
+    public class SantehContext : DbContext
+    {
+        public SantehContext(DbContextOptions<SantehContext> options) : base(options) { }
+
+
+        public DbSet<Role> Roles => Set<Role>();
+        public DbSet<User> Users => Set<User>();
+        public DbSet<Product> Products => Set<Product>();
+        public DbSet<OrderStatus> OrderStatuses => Set<OrderStatus>();
+        public DbSet<Order> Orders => Set<Order>();
+        public DbSet<OrderItem> OrderItems => Set<OrderItem>();
+        public DbSet<Comment> Comments => Set<Comment>();
+
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<Role>().HasKey(r => r.RoleId);
+            modelBuilder.Entity<Role>().HasIndex(r => r.Name).IsUnique();
+
+            modelBuilder.Entity<OrderStatus>().HasKey(s => s.StatusId);
+            modelBuilder.Entity<OrderStatus>().HasIndex(s => s.Name).IsUnique();
+
+            modelBuilder.Entity<Role>().HasData(
+                new Role { RoleId = 1, Name = "Клиент" },
+                new Role { RoleId = 2, Name = "Сотрудник" },
+                new Role { RoleId = 3, Name = "Администратор" }
+            );
+
+            modelBuilder.Entity<OrderStatus>().HasData(
+                new OrderStatus { StatusId = 1, Name = "Создан" },
+                new OrderStatus { StatusId = 2, Name = "В обработке" },
+                new OrderStatus { StatusId = 3, Name = "Выполнен" },
+                new OrderStatus { StatusId = 4, Name = "Отменён" }
+            );
+        }
+    }
+}
