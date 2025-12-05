@@ -61,6 +61,15 @@ const Orders: React.FC<OrdersProps> = ({ user }) => {
 
   const filteredOrders = getDisplayedOrders();
 
+  // calculate visible columns to set correct colSpan when no orders are found
+  const visibleColumnsCount = () => {
+    // Base columns: ID, Date, Sum, Status, Actions
+    let count = 5;
+    if (user.RoleId !== Role.CLIENT) count += 1; // Клиент
+    if (user.RoleId === Role.ADMIN) count += 1; // Исполнитель (admin only)
+    return count;
+  };
+
   const exportPDF = () => {
     const doc = new jsPDF();
     doc.setFontSize(18);
@@ -185,7 +194,7 @@ const Orders: React.FC<OrdersProps> = ({ user }) => {
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredOrders.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-8 text-center text-gray-500">Заказов не найдено</td>
+                  <td colSpan={visibleColumnsCount()} className="px-6 py-8 text-center text-gray-500">Заказов не найдено</td>
                 </tr>
               ) : (
                 filteredOrders.map(order => (
@@ -200,7 +209,7 @@ const Orders: React.FC<OrdersProps> = ({ user }) => {
                           {STATUS_LABELS[order.StatusId]}
                         </span>
                       ) : (
-                        <select value={order.StatusId} onChange={(e) => handleStatusChange(order.OrderId, e.target.value)} className="text-xs font-semibold rounded-full px-2 py-1 border-0 cursor-pointer bg-white text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-cyan-600 sm:text-sm sm:leading-6">
+                        <select value={order.StatusId?.toString()} onChange={(e) => handleStatusChange(order.OrderId, e.target.value)} className="text-xs font-semibold rounded-full px-2 py-1 border-0 cursor-pointer bg-white text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-cyan-600 sm:text-sm sm:leading-6">
                           {Object.entries(STATUS_LABELS).map(([id, label]) => (
                             <option key={id} value={id}>{label}</option>
                           ))}
@@ -212,7 +221,8 @@ const Orders: React.FC<OrdersProps> = ({ user }) => {
                         {order.AssignedToName || 'Не назначен'}
                       </td>
                     )}
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex justify-end gap-2">
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <div className="flex justify-end items-center gap-2">
                       {user.RoleId === Role.EMPLOYEE && !order.AssignedToUserId && (
                         <button onClick={() => takeOrder(order.OrderId)} title="Взять в работу" className="text-green-600 hover:text-green-900 p-1">
                           <CheckCircle size={20} />
@@ -226,6 +236,7 @@ const Orders: React.FC<OrdersProps> = ({ user }) => {
                           <Trash2 size={20} />
                         </button>
                       )}
+                      </div>
                     </td>
                   </tr>
                 ))
