@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using SantehOrders.API.Data;
 using SantehOrders.API.Models;
 using SantehOrders.API.DTOs;
@@ -19,56 +20,39 @@ namespace SantehOrders.API.Controllers
         [Authorize]
         public async Task<IActionResult> GetAll()
         {
-            var roleClaim = User.Claims.FirstOrDefault(c => c.Type == "roleId")?.Value;
-            var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == "sub")?.Value;
+            // Простая версия: возвращаем все строки из таблицы Orders без фильтрации и проекций
+            // Это полезно для проверки данных в Swagger/DB — возвращаем сущности Order напрямую.
+            var orders = await _context.Orders.ToListAsync();
+            return Ok(orders);
+        }
 
-            if (roleClaim == null || userIdClaim == null) return Unauthorized();
-
-            int roleId = int.Parse(roleClaim);
-            int userId = int.Parse(userIdClaim);
-
-            IQueryable<Order> query = _context.Orders
-                .Include(o => o.Items!)
+        // DEBUG: return raw orders from DB (no filtering) to help verify data in development
+        [HttpGet("dbg/all")]
+        public async Task<IActionResult> DebugAll()
+        {
+            var list = await _context.Orders
+                .Include(o => o.Items)
                 .ThenInclude(i => i.Product)
-                .Include(o => o.Status);
+                .Include(o => o.Status)
+                .ToListAsync();
 
-            if (roleId == 1)
-            {
-                query = query.Where(o => o.UserId == userId);
-            }
-            else if (roleId == 2)
-            {
-                query = query.Where(o => o.StatusId == 1 || o.UserId == userId);
-            }
-            else if (roleId == 3)
-            {
-                // роль 3 видит все заказы, фильтр не нужен
-            }
-            else
-            {
-                return Forbid();
-            }
+            return Ok(list);
+        }
 
-            var orders = await query.ToListAsync();
+        [HttpGet("{id}")]
+        [Authorize]
+        public async Task<IActionResult> GetById(int id)
+        {
+            var order = await _context.Orders
+                .Include(o => o.Items)
+                .ThenInclude(i => i.Product)
+                .Include(o => o.Status)
+                .FirstOrDefaultAsync(o => o.OrderId == id);
 
-            var ordersDto = orders.Select(o => new OrderDto
-            {
-                OrderId = o.OrderId,
-                UserId = o.UserId,
-                Status = o.Status?.Name,
-                CreatedAt = o.CreatedAt,
-                UpdatedAt = o.UpdatedAt,
-                TotalAmount = o.TotalAmount,
-                Items = o.Items.Select(i => new OrderItemDto
-                {
-                    ProductId = i.ProductId,
-                    ProductName = i.Product?.Name,
-                    Quantity = i.Quantity,
-                    Price = i.Price
-                }).ToList()
-            }).ToList();
+            if (order == null)
+                return NotFound(new { message = "Заказ не найден" });
 
-            return Ok(ordersDto);
+            return Ok(order);
         }
 
 

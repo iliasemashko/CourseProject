@@ -2,10 +2,27 @@
 import { Product, User, Order, OrderItem } from '../types';
 
 const API_BASE = 'http://localhost:5114/api';
+const TOKEN_KEY = 'santeh_token';
 let jwtToken: string | null = null;
+
+// Initialize token from localStorage so auth persists across reloads
+(function initToken() {
+  try {
+    const t = localStorage.getItem(TOKEN_KEY);
+    jwtToken = t || null;
+  } catch (e) {
+    jwtToken = null;
+  }
+})();
 
 export function setToken(token: string | null) {
   jwtToken = token;
+  try {
+    if (token) localStorage.setItem(TOKEN_KEY, token);
+    else localStorage.removeItem(TOKEN_KEY);
+  } catch (e) {
+    // ignore localStorage errors
+  }
 }
 
 function authHeaders() {
@@ -115,7 +132,46 @@ export async function getOrders(): Promise<Order[]> {
     headers: authHeaders(),
   });
   if (!res.ok) throw new Error(await res.text());
-  return res.json();
+  const data = await res.json();
+
+  // Normalize server response (camelCase or PascalCase) into frontend `Order` shape
+  if (Array.isArray(data)) {
+    return data.map((o: any) => ({
+      OrderId: o.orderId ?? o.OrderId,
+      UserId: o.userId ?? o.UserId,
+      StatusId: o.statusId ?? o.StatusId,
+      TotalAmount: o.totalAmount ?? o.TotalAmount,
+      CreatedAt: o.createdAt ?? o.CreatedAt,
+      UpdatedAt: o.updatedAt ?? o.UpdatedAt,
+      UserName: o.userName ?? o.UserName ?? `User ${o.userId ?? o.UserId}`,
+      Items: Array.isArray(o.items)
+        ? o.items.map((i: any) => ({
+            OrderItemId: i.orderItemId ?? i.OrderItemId,
+            OrderId: i.orderId ?? i.OrderId,
+            ProductId: i.productId ?? i.ProductId,
+            Quantity: i.quantity ?? i.Quantity,
+            Price: i.price ?? i.Price,
+            ProductName: i.product?.name ?? i.product?.Name ?? i.productName ?? i.ProductName,
+            Product: i.product
+              ? {
+                  ProductId: i.product.productId ?? i.product.ProductId,
+                  Name: i.product.name ?? i.product.Name,
+                  Price: i.product.price ?? i.product.Price,
+                  Description: i.product.description ?? i.product.Description,
+                  Category: i.product.category ?? i.product.Category,
+                  Stock: i.product.stock ?? i.product.Stock,
+                  CreatedAt: i.product.createdAt ?? i.product.CreatedAt ?? new Date().toISOString(),
+                  ImageUrl: i.product.imageUrl ?? i.product.ImageUrl,
+                }
+              : undefined,
+          }))
+        : [],
+      AssignedToUserId: o.assignedToUserId ?? o.AssignedToUserId,
+      AssignedToName: o.assignedToName ?? o.AssignedToName,
+    } as Order));
+  }
+
+  return [];
 }
 
 export async function getOrder(id: number): Promise<Order> {
@@ -123,7 +179,42 @@ export async function getOrder(id: number): Promise<Order> {
     headers: authHeaders(),
   });
   if (!res.ok) throw new Error(await res.text());
-  return res.json();
+  const o = await res.json();
+
+  // Normalize server response (camelCase or PascalCase) into frontend `Order` shape
+  return {
+    OrderId: o.orderId ?? o.OrderId,
+    UserId: o.userId ?? o.UserId,
+    StatusId: o.statusId ?? o.StatusId,
+    TotalAmount: o.totalAmount ?? o.TotalAmount,
+    CreatedAt: o.createdAt ?? o.CreatedAt,
+    UpdatedAt: o.updatedAt ?? o.UpdatedAt,
+    UserName: o.userName ?? o.UserName ?? `User ${o.userId ?? o.UserId}`,
+    Items: Array.isArray(o.items)
+      ? o.items.map((i: any) => ({
+          OrderItemId: i.orderItemId ?? i.OrderItemId,
+          OrderId: i.orderId ?? i.OrderId,
+          ProductId: i.productId ?? i.ProductId,
+          Quantity: i.quantity ?? i.Quantity,
+          Price: i.price ?? i.Price,
+          ProductName: i.product?.name ?? i.product?.Name ?? i.productName ?? i.ProductName,
+          Product: i.product
+            ? {
+                ProductId: i.product.productId ?? i.product.ProductId,
+                Name: i.product.name ?? i.product.Name,
+                Price: i.product.price ?? i.product.Price,
+                Description: i.product.description ?? i.product.Description,
+                Category: i.product.category ?? i.product.Category,
+                Stock: i.product.stock ?? i.product.Stock,
+                CreatedAt: i.product.createdAt ?? i.product.CreatedAt ?? new Date().toISOString(),
+                ImageUrl: i.product.imageUrl ?? i.product.ImageUrl,
+              }
+            : undefined,
+        }))
+      : [],
+    AssignedToUserId: o.assignedToUserId ?? o.AssignedToUserId,
+    AssignedToName: o.assignedToName ?? o.AssignedToName,
+  } as Order;
 }
 
 export async function createOrder(order: Partial<Order>): Promise<Order> {

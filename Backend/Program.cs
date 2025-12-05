@@ -34,7 +34,17 @@ builder.Services.AddSwaggerGen(c =>
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
-            jwtScheme,
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                },
+                Scheme = "bearer",
+                Name = "Authorization",
+                In = ParameterLocation.Header
+            },
             new string[] { }
         }
     });
@@ -63,11 +73,34 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(key),
-            ClockSkew = TimeSpan.FromMinutes(5) // Допуск 5 минут для разницы в часах
+            ClockSkew = TimeSpan.FromMinutes(5)
+        };
+
+        // Добавьте это для логирования
+        options.Events = new JwtBearerEvents
+        {
+            OnAuthenticationFailed = context =>
+            {
+                Console.WriteLine("JWT Authentication failed: " + context.Exception.Message);
+                if (context.Exception.InnerException != null)
+                {
+                    Console.WriteLine("Inner exception: " + context.Exception.InnerException.Message);
+                }
+                return Task.CompletedTask;
+            },
+            OnTokenValidated = context =>
+            {
+                Console.WriteLine("JWT Token validated successfully.");
+                return Task.CompletedTask;
+            },
+            OnChallenge = context =>
+            {
+                Console.WriteLine("JWT OnChallenge: " + context.Error + " - " + context.ErrorDescription);
+                return Task.CompletedTask;
+            }
         };
     });
-
-
+    
 builder.Services.AddAuthorization();
 
 // ============ CORS - КРИТИЧЕСКИ ВАЖНО! ============

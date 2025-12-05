@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Order, OrderItem, Comment, User, Role, OrderStatus } from '../types';
+import { Order, OrderItem, Comment, User, Role, OrderStatus, Product } from '../types';
 import { STATUS_LABELS, STATUS_COLORS } from '../constants';
-import { ArrowLeft, Send, User as UserIcon, Phone, Mail, CheckCircle } from 'lucide-react';
-import { getOrder, getComments, addComment, updateOrderStatus, getUser } from '../services/api';
+import { ArrowLeft, Send, User as UserIcon, Phone, Mail, CheckCircle, X } from 'lucide-react';
+import { getOrder, getComments, addComment, updateOrderStatus, getUser, getProduct } from '../services/api';
 
 interface OrderDetailProps {
     user: User;
@@ -17,6 +17,8 @@ const OrderDetail: React.FC<OrderDetailProps> = ({ user }) => {
     const [comments, setComments] = useState<Comment[]>([]);
     const [newComment, setNewComment] = useState('');
     const [customer, setCustomer] = useState<User | undefined>(undefined);
+    const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+    const [productLoading, setProductLoading] = useState(false);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
@@ -182,16 +184,37 @@ const OrderDetail: React.FC<OrderDetailProps> = ({ user }) => {
                             items.map(item => (
                                 <div key={item.OrderItemId} className="flex justify-between items-center py-3 border-b border-gray-100 last:border-0">
                                     <div className="flex-1">
-                                        <p className="font-medium text-gray-900 text-lg">{item.ProductName}</p>
+                                        <p className="font-medium text-gray-900 text-lg">{item.ProductName || `Товар #${item.ProductId}`}</p>
                                         <div className="text-gray-500 mt-1 flex items-center gap-2">
                                             <span>{item.Price.toLocaleString()} ₽</span>
                                             <span className="text-gray-300">|</span>
                                             <span className="text-gray-900 font-medium">{item.Quantity} шт.</span>
                                         </div>
                                     </div>
-                                    <div className="font-bold text-gray-900 text-lg">
-                                        {(item.Price * item.Quantity).toLocaleString()} ₽
-                                    </div>
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="font-bold text-gray-900 text-lg">
+                                                            {(item.Price * item.Quantity).toLocaleString()} ₽
+                                                        </div>
+                                                        <button
+                                                            onClick={async () => {
+                                                                if (!item.ProductId) return;
+                                                                setProductLoading(true);
+                                                                try {
+                                                                    const p = await getProduct(item.ProductId);
+                                                                    setSelectedProduct(p);
+                                                                } catch (err) {
+                                                                    console.error('Error loading product:', err);
+                                                                    alert('Ошибка при загрузке информации о товаре');
+                                                                } finally {
+                                                                    setProductLoading(false);
+                                                                }
+                                                            }}
+                                                            disabled={productLoading}
+                                                            className="text-sm px-3 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-700 disabled:opacity-50"
+                                                        >
+                                                            {productLoading ? 'Загрузка...' : 'Подробнее'}
+                                                        </button>
+                                                    </div>
                                 </div>
                             ))
                         )}
@@ -241,6 +264,90 @@ const OrderDetail: React.FC<OrderDetailProps> = ({ user }) => {
                     </button>
                 </div>
             </div>
+
+            {/* Product Detail Modal */}
+            {selectedProduct && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-xl shadow-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+                        {/* Header */}
+                        <div className="flex justify-between items-start p-6 border-b border-gray-200">
+                            <h2 className="text-2xl font-bold text-gray-900">{selectedProduct.Name}</h2>
+                            <button
+                                onClick={() => setSelectedProduct(null)}
+                                className="text-gray-400 hover:text-gray-600"
+                            >
+                                <X size={24} />
+                            </button>
+                        </div>
+
+                        {/* Content */}
+                        <div className="p-6 space-y-6">
+                            {/* Product Image */}
+                            {selectedProduct.ImageUrl && (
+                                <div className="w-full h-64 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
+                                    <img
+                                        src={selectedProduct.ImageUrl}
+                                        alt={selectedProduct.Name}
+                                        className="w-full h-full object-cover"
+                                        onError={(e) => {
+                                            (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect fill="%23f3f4f6" width="200" height="200"/%3E%3Ctext x="50%25" y="50%25" font-size="14" fill="%239ca3af" text-anchor="middle" dy=".3em"%3EИзображение не доступно%3C/text%3E%3C/svg%3E';
+                                        }}
+                                    />
+                                </div>
+                            )}
+
+                            {/* Description */}
+                            {selectedProduct.Description && (
+                                <div>
+                                    <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2">Описание</h3>
+                                    <p className="text-gray-700">{selectedProduct.Description}</p>
+                                </div>
+                            )}
+
+                            {/* Details Grid */}
+                            <div className="grid grid-cols-2 gap-4">
+                                {/* Category */}
+                                {selectedProduct.Category && (
+                                    <div className="bg-gray-50 p-4 rounded-lg">
+                                        <p className="text-sm font-semibold text-gray-500 uppercase mb-1">Категория</p>
+                                        <p className="text-gray-900 font-medium">{selectedProduct.Category}</p>
+                                    </div>
+                                )}
+
+                                {/* Price */}
+                                <div className="bg-gray-50 p-4 rounded-lg">
+                                    <p className="text-sm font-semibold text-gray-500 uppercase mb-1">Цена</p>
+                                    <p className="text-gray-900 font-medium text-lg">{selectedProduct.Price.toLocaleString()} ₽</p>
+                                </div>
+
+                                {/* Stock */}
+                                <div className="bg-gray-50 p-4 rounded-lg">
+                                    <p className="text-sm font-semibold text-gray-500 uppercase mb-1">Остаток</p>
+                                    <p className={`font-medium ${selectedProduct.Stock > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                        {selectedProduct.Stock > 0 ? `${selectedProduct.Stock} шт.` : 'Нет в наличии'}
+                                    </p>
+                                </div>
+
+                                {/* Product ID */}
+                                <div className="bg-gray-50 p-4 rounded-lg">
+                                    <p className="text-sm font-semibold text-gray-500 uppercase mb-1">ID товара</p>
+                                    <p className="text-gray-900 font-medium">#{selectedProduct.ProductId}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Footer */}
+                        <div className="p-6 border-t border-gray-200 flex justify-end">
+                            <button
+                                onClick={() => setSelectedProduct(null)}
+                                className="px-6 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
+                            >
+                                Закрыть
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

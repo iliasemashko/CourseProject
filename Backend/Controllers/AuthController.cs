@@ -65,15 +65,16 @@
                 var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt["Key"]!));
                 var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-                var claims = new[]
-                {
-                new Claim(JwtRegisteredClaimNames.Sub, user.UserId.ToString()),
-                new Claim(ClaimTypes.Name, user.FullName),
-                new Claim("roleId", user.RoleId.ToString()),
-                new Claim(JwtRegisteredClaimNames.Email, user.Email)
-            };
+            var claims = new[]
+            {
+    new Claim(JwtRegisteredClaimNames.Sub, user.UserId.ToString()),
+    new Claim(ClaimTypes.Name, user.FullName),
+    new Claim(ClaimTypes.Role, user.RoleId.ToString()), 
+    new Claim("roleId", user.RoleId.ToString()),
+    new Claim(JwtRegisteredClaimNames.Email, user.Email)
+};
 
-                var token = new JwtSecurityToken(
+            var token = new JwtSecurityToken(
                     issuer: jwt["Issuer"],
                     audience: jwt["Audience"],
                     claims: claims,
