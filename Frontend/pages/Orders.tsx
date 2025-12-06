@@ -70,28 +70,30 @@ const Orders: React.FC<OrdersProps> = ({ user }) => {
     return count;
   };
 
-  const exportPDF = () => {
-    const doc = new jsPDF();
-    doc.setFontSize(18);
-    doc.text('Order Report - SantehOrders', 14, 22);
+const exportPDF = () => {
+  const doc = new jsPDF('p', 'mm', 'a4');
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(18);
+  doc.text('Отчет по заказам - SantehOrders', 14, 22);
 
-    const tableData = filteredOrders.map(o => [
-      o.OrderId.toString(),
-      new Date(o.CreatedAt).toLocaleDateString(),
-      o.UserName || '',
-      o.TotalAmount.toLocaleString() + ' ₽',
-      STATUS_LABELS[o.StatusId] || 'Unknown',
-      o.AssignedToName || 'Unassigned'
-    ]) as string[][];
+  const tableData = filteredOrders.map(o => [
+    o.OrderId.toString(),
+    new Date(o.CreatedAt).toLocaleDateString(),
+    o.UserName || '',
+    o.TotalAmount.toLocaleString() + ' ₽',
+    STATUS_LABELS[o.StatusId] || 'Unknown',
+    o.AssignedToName || 'Не назначен'
+  ]) as string[][];
 
-    autoTable(doc, {
-      head: [['ID', 'Дата', 'Клиент', 'Сумма', 'Статус', 'Исполнитель']],
-      body: tableData,
-      startY: 30,
-    });
+  autoTable(doc, {
+    head: [['ID', 'Дата', 'Клиент', 'Сумма', 'Статус', 'Исполнитель']],
+    body: tableData,
+    startY: 30,
+    styles: { font: 'helvetica' }
+  });
 
-    doc.save('orders_report.pdf');
-  };
+  doc.save('orders_report.pdf');
+};
 
   const handleStatusChange = async (orderId: number, newStatusStr: string) => {
     const newStatus = Number(newStatusStr);
