@@ -16,15 +16,25 @@ export enum OrderStatus {
 export interface User {
   UserId: number;
   RoleId: Role;
-  Surname: string;
-  Name: string;
-  Patronymic?: string;
   FullName: string;
   Email: string;
-  Phone?: string;
   PasswordHash?: string;
   CreatedAt: string;
-  IsBlocked?: boolean;
+}
+
+export interface CreateUserDto {
+  FullName: string;
+  Email: string;
+  Password: string;
+  RoleId?: number;
+}
+
+export interface UpdateUserDto {
+
+  FullName: string;
+  Email: string;
+  Password: string;
+  RoleId?: number;
 }
 
 export interface Product {

@@ -1,5 +1,5 @@
 // api.ts
-import { Product, User, Order, OrderItem } from '../types';
+import { Product, User, Order, OrderItem, UpdateUserDto,CreateUserDto } from '../types';
 
 const API_BASE = 'http://localhost:5114/api';
 const TOKEN_KEY = 'santeh_token';
@@ -325,17 +325,33 @@ export async function addComment(orderId: number, text: string): Promise<any> {
 }
 
 // ---------- User ----------
+export async function getUsers(): Promise<User[]> {
+  const res = await fetch(`${API_BASE}`, { headers: authHeaders() });
+  if (!res.ok) throw new Error(await res.text());
+  const data = await res.json();
+  return data.map(transformUser);
+}
+
 export async function getUser(id: number): Promise<User> {
-  const res = await fetch(`${API_BASE}/auth/user/${id}`, {
+  const res = await fetch(`${API_BASE}/${id}`, { headers: authHeaders() });
+  if (!res.ok) throw new Error(await res.text());
+  const data = await res.json();
+  return transformUser(data);
+}
+
+export async function createUser(dto: CreateUserDto): Promise<User> {
+  const res = await fetch(`${API_BASE}`, {
+    method: 'POST',
     headers: authHeaders(),
+    body: JSON.stringify(dto),
   });
   if (!res.ok) throw new Error(await res.text());
   const data = await res.json();
   return transformUser(data);
 }
 
-export async function updateUser(user: Partial<User>): Promise<User> {
-  const res = await fetch(`${API_BASE}/auth/user`, {
+export async function updateUser(user: UpdateUserDto & { UserId: number }): Promise<User> {
+  const res = await fetch(`${API_BASE}/${user.UserId}`, {
     method: 'PUT',
     headers: authHeaders(),
     body: JSON.stringify(user),
@@ -345,19 +361,22 @@ export async function updateUser(user: Partial<User>): Promise<User> {
   return transformUser(data);
 }
 
+export async function deleteUser(id: number): Promise<void> {
+  const res = await fetch(`${API_BASE}/${id}`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  });
+  if (!res.ok) throw new Error(await res.text());
+}
+
 // Helper function to transform user data (camelCase to PascalCase)
 function transformUser(data: any): User {
   return {
     UserId: data.userId || data.UserId,
     RoleId: data.roleId || data.RoleId,
-    Surname: data.surname || data.Surname,
-    Name: data.name || data.Name,
-    Patronymic: data.patronymic || data.Patronymic,
     FullName: data.fullName || data.FullName,
     Email: data.email || data.Email,
-    Phone: data.phone || data.Phone,
     PasswordHash: data.passwordHash || data.PasswordHash,
-    CreatedAt: data.createdAt || data.CreatedAt,
-    IsBlocked: data.isBlocked || data.IsBlocked,
+    CreatedAt: data.createdAt || data.CreatedAt
   };
 }

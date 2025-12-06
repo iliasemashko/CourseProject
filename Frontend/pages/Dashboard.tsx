@@ -199,12 +199,7 @@ const filteredOrders: Order[] = orders; // замените на вашу фил
                 <h1 className="text-3xl font-bold text-gray-900">Панель администратора</h1>
                 
                 <div className="flex gap-3">
-                    <button 
-                        onClick={() => navigate('/cart')}
-                        className="flex items-center gap-2 bg-cyan-600 text-white px-4 py-2 rounded-lg hover:bg-cyan-700 text-sm font-medium transition-colors"
-                    >
-                        <ShoppingCart size={18} /> Корзина
-                    </button>
+
                     <button 
                         onClick={handleExportPDF}
                         className="flex items-center gap-2 bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 text-sm font-medium transition-colors"
@@ -228,94 +223,88 @@ const filteredOrders: Order[] = orders; // замените на вашу фил
             </div>
             
             {/* KPI Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex items-center gap-4">
-                    <div className="bg-blue-100 p-3 rounded-full text-blue-600">
-                        <ShoppingBag size={24} />
-                    </div>
-                    <div>
-                        <p className="text-sm text-gray-500">Всего заказов</p>
-                        <p className="text-2xl font-bold text-gray-900">{stats.totalOrders}</p>
-                    </div>
-                </div>
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex items-center gap-4">
-                    <div className="bg-green-100 p-3 rounded-full text-green-600">
-                        <DollarSign size={24} />
-                    </div>
-                    <div>
-                        <p className="text-sm text-gray-500">Выручка (Выполнено)</p>
-                        <p className="text-2xl font-bold text-gray-900">{stats.totalRevenue.toLocaleString()} ₽</p>
-                    </div>
-                </div>
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex items-center gap-4">
-                    <div className="bg-purple-100 p-3 rounded-full text-purple-600">
-                        <Users size={24} />
-                    </div>
-                    <div>
-                        <p className="text-sm text-gray-500">Пользователи</p>
-                        <p className="text-2xl font-bold text-gray-900">{stats.totalUsers}</p>
-                    </div>
-                </div>
-            </div>
+<div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex items-center gap-4">
+        <div className="bg-blue-100 p-3 rounded-full text-blue-600">
+            <ShoppingBag size={24} />
+        </div>
+        <div>
+            <p className="text-sm text-gray-500">Всего заказов</p>
+            <p className="text-2xl font-bold text-gray-900">{stats.totalOrders}</p>
+        </div>
+    </div>
+    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex items-center gap-4">
+        <div className="bg-green-100 p-3 rounded-full text-green-600">
+            <DollarSign size={24} />
+        </div>
+        <div>
+            <p className="text-sm text-gray-500">Выручка (Выполнено)</p>
+            <p className="text-2xl font-bold text-gray-900">{stats.totalRevenue.toLocaleString()} ₽</p>
+        </div>
+    </div>
+    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex items-center gap-4">
+        <div className="bg-purple-100 p-3 rounded-full text-purple-600">
+            <Users size={24} />
+        </div>
+        <div>
+            <p className="text-sm text-gray-500">Пользователи</p>
+            <p className="text-2xl font-bold text-gray-900">{stats.totalUsers}</p>
+        </div>
+    </div>
+</div>
+
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
                 {/* Chart */}
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                    <h3 className="text-lg font-semibold mb-6">Статистика заказов</h3>
-                    <div className="h-64">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={stats.chartData}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                <XAxis dataKey="name" />
-                                <YAxis allowDecimals={false} />
-                                <Tooltip />
-                                <Bar dataKey="count" fill="#0891b2" radius={[4, 4, 0, 0]} />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
+<div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+    <h3 className="text-lg font-semibold mb-6">Статистика заказов</h3>
+    <div className="h-64">
+        <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={stats.chartData}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="name" />
+                <YAxis allowDecimals={false} />
+                <Tooltip />
+                <Bar dataKey="count" fill="#0891b2" radius={[4, 4, 0, 0]} />
+            </BarChart>
+        </ResponsiveContainer>
+    </div>
+</div>
+
 
                 {/* User Management */}
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex flex-col">
-                    <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-lg font-semibold">Управление пользователями</h3>
-                        <button 
-                            onClick={() => setIsUserModalOpen(true)}
-                            className="bg-cyan-600 text-white p-2 rounded-lg hover:bg-cyan-700"
-                            title="Добавить пользователя"
-                        >
-                            <Plus size={18} />
-                        </button>
+    <div className="flex justify-between items-center mb-4">
+        <h3 className="text-lg font-semibold">Управление пользователями</h3>
+        <button 
+            onClick={() => setIsUserModalOpen(true)}
+            className="bg-cyan-600 text-white p-2 rounded-lg hover:bg-cyan-700"
+        >
+            <Plus size={18} />
+        </button>
+    </div>
+    <div className="overflow-y-auto flex-1 max-h-[300px]">
+        {users.map(u => (
+            <div key={u.UserId} className={`flex justify-between items-center py-3 border-b last:border-0`}>
+                <div>
+                    <div className="flex items-center gap-2">
+                        <p className="font-medium">{u.FullName}</p>
                     </div>
-                    
-                    <div className="overflow-y-auto flex-1 max-h-[300px]">
-                        {users.map(u => (
-                            <div key={u.UserId} className={`flex justify-between items-center py-3 border-b last:border-0 ${u.IsBlocked ? 'opacity-50' : ''}`}>
-                                <div>
-                                    <div className="flex items-center gap-2">
-                                        <p className="font-medium">{u.FullName}</p>
-                                        {u.IsBlocked && <span className="text-xs bg-red-100 text-red-600 px-1 rounded">Blocked</span>}
-                                    </div>
-                                    <p className="text-xs text-gray-400">{u.Email}</p>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    <span className="text-xs bg-gray-100 px-2 py-1 rounded">
-                                        {u.RoleId === Role.CLIENT ? 'Клиент' : u.RoleId === Role.EMPLOYEE ? 'Сотрудник' : 'Админ'}
-                                    </span>
-                                    {u.RoleId !== Role.ADMIN && (
-                                        <button 
-                                            onClick={() => toggleBlock(u.UserId)}
-                                            className={`p-1 rounded ${u.IsBlocked ? 'text-green-600 hover:bg-green-50' : 'text-red-600 hover:bg-red-50'}`}
-                                            title={u.IsBlocked ? "Разблокировать" : "Заблокировать"}
-                                        >
-                                            {u.IsBlocked ? <Unlock size={16} /> : <Lock size={16} />}
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+                    <p className="text-xs text-gray-400">{u.Email}</p>
                 </div>
+                <div className="flex items-center gap-3">
+                    <span className="text-xs bg-gray-100 px-2 py-1 rounded">
+                        {u.RoleId === Role.CLIENT ? 'Клиент' : u.RoleId === Role.EMPLOYEE ? 'Сотрудник' : 'Админ'}
+                    </span>
+                    {/* <button onClick={() => toggleBlock(u.UserId)} className="p-1 rounded-full border">
+                        {u.IsBlocked ? <Unlock size={14} /> : <Lock size={14} />}
+                    </button> */}
+                </div>
+            </div>
+        ))}
+    </div>
+</div>
+
             </div>
 
             {/* Create User Modal */}

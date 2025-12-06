@@ -71,10 +71,10 @@ const Login: React.FC<LoginProps> = ({ setUser }) => {
                     Нет аккаунта? <Link to="/register" className="text-cyan-600 hover:underline">Зарегистрироваться</Link>
                 </div>
                  <div className="mt-4 text-center text-xs text-gray-400">
-                    <p>Demo accounts:</p>
-                    <p>Admin: admin@santeh.ru / admin123</p>
-                    <p>Employee: manager@santeh.ru / manager123</p>
-                    <p>Client: client@mail.ru / client123</p>
+                    <p>Тестовый вход</p>
+                    <p>Админ: igor.kuznetsov@example.com / Password123!</p>
+                    <p>Сотрудник: olga.lebedeva@example.com / Password123!</p>
+                    <p>Клиент: anatoly.nosov@example.com / Password123!</p>
                 </div>
             </div>
         </div>
