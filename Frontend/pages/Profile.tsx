@@ -12,11 +12,8 @@ interface ProfileProps {
 const Profile: React.FC<ProfileProps> = ({ user, setUser }) => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    Surname: user.Surname,
-    Name: user.Name,
-    Patronymic: user.Patronymic || '',
+    Fullname: user.FullName,
     Email: user.Email,
-    Phone: user.Phone || '',
     Password: ''
   });
   const [message, setMessage] = useState('');
@@ -28,21 +25,10 @@ const Profile: React.FC<ProfileProps> = ({ user, setUser }) => {
     setError('');
     setMessage('');
     try {
-      // Генерируем FullName из компонентов
-      const fullName = [
-        formData.Surname,
-        formData.Name,
-        formData.Patronymic
-      ].filter(Boolean).join(' ');
-
       const updated = { 
         ...user, 
-        Surname: formData.Surname,
-        Name: formData.Name,
-        Patronymic: formData.Patronymic,
-        FullName: fullName,
+        Fullname: formData.Fullname,
         Email: formData.Email,
-        Phone: formData.Phone,
       } as any;
       if (formData.Password) {
         updated.PasswordHash = formData.Password;
@@ -82,39 +68,17 @@ const Profile: React.FC<ProfileProps> = ({ user, setUser }) => {
          {message && <div className="bg-green-100 text-green-700 p-3 rounded-lg">{message}</div>}
          {error && <div className="bg-red-100 text-red-700 p-3 rounded-lg">{error}</div>}
          
-         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Фамилия *</label>
-                <input 
-                    type="text"
-                    required
-                    className="w-full bg-white text-gray-900 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-cyan-500 outline-none"
-                    value={formData.Surname}
-                    onChange={e => setFormData({...formData, Surname: e.target.value})}
-                />
-            </div>
 
-            <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Имя *</label>
-                <input 
-                    type="text"
-                    required
-                    className="w-full bg-white text-gray-900 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-cyan-500 outline-none"
-                    value={formData.Name}
-                    onChange={e => setFormData({...formData, Name: e.target.value})}
-                />
-            </div>
-         </div>
-
-         <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Отчество (необязательно)</label>
-            <input 
-                type="text"
-                className="w-full bg-white text-gray-900 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-cyan-500 outline-none"
-                value={formData.Patronymic}
-                onChange={e => setFormData({...formData, Patronymic: e.target.value})}
-            />
-         </div>
+          <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">ФИО *</label>
+              <input 
+                  type="text"
+                  required
+                  className="w-full bg-white text-gray-900 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-cyan-500 outline-none"
+                  value={formData.Fullname}
+                  onChange={e => setFormData({...formData, Fullname: e.target.value})}
+              />
+          </div>
 
          <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
@@ -123,16 +87,6 @@ const Profile: React.FC<ProfileProps> = ({ user, setUser }) => {
                 className="w-full bg-white text-gray-900 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-cyan-500 outline-none"
                 value={formData.Email}
                 onChange={e => setFormData({...formData, Email: e.target.value})}
-            />
-         </div>
-
-         <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Телефон</label>
-            <input 
-                type="text"
-                className="w-full bg-white text-gray-900 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-cyan-500 outline-none"
-                value={formData.Phone}
-                onChange={e => setFormData({...formData, Phone: e.target.value})}
             />
          </div>
 

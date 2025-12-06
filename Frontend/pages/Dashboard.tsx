@@ -184,7 +184,7 @@ const Dashboard: React.FC = () => {
         ]);
 
         autoTable(doc, {
-            head: [['ID', 'Date', 'Client', 'Earnings', 'Status']],
+            head: [['ID', 'Date', 'Client', 'Earnings', 'Статус']],
             body: tableData,
             startY: 66,
             styles: {
