@@ -36,48 +36,42 @@ const OrderDetail: React.FC<OrderDetailProps> = ({ user }) => {
         setError('');
         try {
             const orderId = parseInt(id);
-            
-            if (isNaN(orderId)) {
-                throw new Error('Некорректный ID заказа');
-            }
-            
+            if (isNaN(orderId)) throw new Error('Некорректный ID заказа');
+
             const foundOrder = await getOrder(orderId);
-            
-            // Security check for clients
+
             if (user.RoleId === Role.CLIENT && foundOrder.UserId !== user.UserId) {
                 navigate('/');
                 return;
             }
-            
+
             setOrder(foundOrder);
-            
-            // Load comments
-            try {
-                const orderComments = await getComments(orderId);
-                setComments(orderComments);
-            } catch (err) {
-                console.error('Error loading comments:', err);
-                // Не критично если комментарии не загрузились
-            }
-            
-            // Get customer details for employees/admins
+
             if (user.RoleId !== Role.CLIENT) {
                 try {
                     const customerData = await getUser(foundOrder.UserId);
                     setCustomer(customerData);
-                } catch (err) {
-                    console.error('Error loading customer:', err);
-                    // Не критично если данные клиента не загрузились
-                }
+                } catch {}
             }
         } catch (err) {
-            console.error('Error loading order:', err);
             const errorMessage = err instanceof Error ? err.message : 'Ошибка при загрузке заказа';
             setError(errorMessage);
         } finally {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        const load = async () => {
+            if (!order) return;
+            const data = await getComments(order.OrderId);
+            console.log('COMMENTS:', data);
+            setComments(data);
+        };
+        load();
+    }, [order]);
+
+
 
     const handleSendComment = async () => {
         if (!newComment.trim() || !order) return;
@@ -371,23 +365,35 @@ const OrderDetail: React.FC<OrderDetailProps> = ({ user }) => {
                             <p className="text-sm text-gray-400 mt-1">Начните обсуждение заказа</p>
                         </div>
                     ) : (
-                        comments.map(c => (
-                            <div key={c.CommentId} className={`flex flex-col ${c.UserId === user.UserId ? 'items-end' : 'items-start'}`}>
-                                <div className={`max-w-[75%] rounded-xl p-4 shadow-sm ${
-                                    c.UserId === user.UserId 
-                                        ? 'bg-cyan-600 text-white rounded-br-none' 
-                                        : 'bg-white text-gray-800 rounded-bl-none border border-gray-200'
-                                }`}>
-                                    <p className={`text-xs font-bold mb-2 ${c.UserId === user.UserId ? 'text-cyan-100' : 'text-gray-500'}`}>
-                                        {c.UserName}
-                                    </p>
-                                    <p className="leading-relaxed">{c.Text}</p>
-                                </div>
-                                <span className="text-xs text-gray-400 mt-1 px-2">
-                                    {new Date(c.CreatedAt).toLocaleString('ru-RU')}
-                                </span>
-                            </div>
-                        ))
+comments.map(c => (
+    <div 
+        key={c.commentId} 
+        className={`flex flex-col ${c.userId === user.UserId ? 'items-end' : 'items-start'}`}
+    >
+        <div 
+            className={`max-w-[75%] rounded-xl p-4 shadow-sm ${
+                c.userId === user.UserId
+                    ? 'bg-cyan-600 text-white rounded-br-none'
+                    : 'bg-white text-gray-800 rounded-bl-none border border-gray-200'
+            }`}
+        >
+            <p 
+                className={`text-xs font-bold mb-2 ${
+                    c.userId === user.UserId ? 'text-cyan-100' : 'text-gray-500'
+                }`}
+            >
+                {c.userName}
+            </p>
+
+            <p className="leading-relaxed">{c.text}</p>
+        </div>
+
+        <span className="text-xs text-gray-400 mt-1 px-2">
+            {new Date(c.createdAt).toLocaleString('ru-RU')}
+        </span>
+    </div>
+))
+
                     )}
                 </div>
                 <div className="p-4 border-t border-gray-200 bg-white flex gap-3">

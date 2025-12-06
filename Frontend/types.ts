@@ -65,13 +65,14 @@ export interface Order {
 }
 
 export interface Comment {
-  CommentId: number;
-  OrderId: number;
-  UserId: number;
-  Text: string;
-  CreatedAt: string;
-  UserName?: string;
+  commentId: number;
+  orderId: number;
+  userId: number;
+  userName: string;
+  text: string;
+  createdAt: string;
 }
+
 
 export interface CartItem extends Product {
   quantity: number;

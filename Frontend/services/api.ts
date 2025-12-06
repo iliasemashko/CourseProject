@@ -254,12 +254,20 @@ export async function deleteOrder(orderId: number): Promise<void> {
 }
 
 // ---------- Comments ----------
-export async function getComments(orderId: number): Promise<any[]> {
-  const res = await fetch(`${API_BASE}/orders/${orderId}/comments`, {
-    headers: authHeaders(),
-  });
-  if (!res.ok) throw new Error(await res.text());
-  return res.json();
+export async function getComments(orderId: number) {
+    const response = await fetch(`${API_BASE}/orders/${orderId}/comments`, {
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${localStorage.getItem(TOKEN_KEY)}`,
+            'Content-Type': 'application/json'
+        }
+    });
+
+    if (!response.ok) {
+        throw new Error('Failed to load comments');
+    }
+
+    return await response.json();
 }
 
 export async function addComment(orderId: number, text: string): Promise<any> {
