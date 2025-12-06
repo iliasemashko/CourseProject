@@ -58,27 +58,27 @@ namespace SantehOrders.API.Controllers
 
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateUser(int id, User user)
+        public async Task<IActionResult> UpdateUser(int id, [FromBody] UpdateUserDto dto)
         {
-            if (id != user.UserId)
-            {
-                return BadRequest();
-            }
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.UserId == id);
+            if (user == null) return NotFound();
 
-            _context.Entry(user).State = EntityState.Modified;
+            if (!string.IsNullOrWhiteSpace(dto.FullName))
+                user.FullName = dto.FullName;
 
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!UserExists(id))
-                {
-                    return NotFound();
-                }
-                throw;
-            }
+            if (!string.IsNullOrWhiteSpace(dto.Email))
+                user.Email = dto.Email;
+
+            if (!string.IsNullOrWhiteSpace(dto.Password))
+                user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
+
+            if (dto.RoleId.HasValue)
+                user.RoleId = dto.RoleId.Value;
+
+            if (dto.CreatedAt.HasValue)
+                user.CreatedAt = dto.CreatedAt.Value;
+
+            await _context.SaveChangesAsync();
 
             return NoContent();
         }
