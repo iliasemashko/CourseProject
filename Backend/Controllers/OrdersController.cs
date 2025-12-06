@@ -74,18 +74,17 @@ namespace SantehOrders.API.Controllers
             var order = new Order
             {
                 UserId = dto.UserId,
-                StatusId = 1, // Создан
+                StatusId = 1,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow,
                 Items = dto.Items.Select(i => new OrderItem
                 {
                     ProductId = i.ProductId,
-                    Quantity = i.Quantity,
-                    Price = i.Price
+                    Quantity = i.Quantity
                 }).ToList()
             };
 
-            order.TotalAmount = order.Items.Sum(i => i.Price * i.Quantity);
+            order.TotalAmount = order.Items.Sum(i => i.Quantity * (i.Product?.Price ?? 0));
 
             _context.Orders.Add(order);
             await _context.SaveChangesAsync();
@@ -101,14 +100,14 @@ namespace SantehOrders.API.Controllers
                 Items = order.Items.Select(i => new OrderItemDto
                 {
                     ProductId = i.ProductId,
-                    ProductName = null, // Можно подгрузить, если нужно
-                    Quantity = i.Quantity,
-                    Price = i.Price
+                    ProductName = i.Product?.Name,
+                    Quantity = i.Quantity
                 }).ToList()
             };
 
             return CreatedAtAction(nameof(GetAll), new { id = order.OrderId }, orderDto);
         }
+
 
         [HttpPut("{id}/status")]
         [Authorize]

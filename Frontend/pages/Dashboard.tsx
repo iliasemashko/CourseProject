@@ -1,13 +1,13 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { User, OrderStatus, Role, Order } from '../types';
+import { User, OrderStatus, Role, Order} from '../types';
 import { StorageService } from '../services/storageService';
+import { getOrders} from '../services/api';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Users, ShoppingBag, DollarSign, Lock, Unlock, Plus, FileText, Upload, ShoppingCart } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import RobotoTTF from '../fonts/Roboto-VariableFont_wdth,wght.ttf';
 import { useNavigate } from 'react-router-dom';
-
 
 const Dashboard: React.FC = () => {
     const navigate = useNavigate();
@@ -22,32 +22,42 @@ const Dashboard: React.FC = () => {
     const [newUser, setNewUser] = useState({ FullName: '', Email: '', PasswordHash: '', RoleId: Role.CLIENT });
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const [orders, getOrders] = useState<Order[]>([]);
+    // Исправлено: теперь правильно объявляем state для orders
+    const [orders, setOrders] = useState<Order[]>([]);
 
-    const refreshData = () => {
-        const orders = StorageService.getOrders();
-        const allUsers = StorageService.getAllUsers();
-        setUsers(allUsers);
-        
-        const totalRevenue = orders.reduce((sum, o) => sum + (o.StatusId === OrderStatus.COMPLETED ? o.TotalAmount : 0), 0);
-        
-        const statusCounts = orders.reduce((acc, o) => {
-            const statusName = o.StatusId === 1 ? 'New' : o.StatusId === 2 ? 'Proc' : o.StatusId === 3 ? 'Done' : 'Canc';
-            acc[statusName] = (acc[statusName] || 0) + 1;
-            return acc;
-        }, {} as Record<string, number>);
+    const refreshData = async () => {
+        try {
+            // Получаем заказы из API
+            const fetchedOrders = await getOrders();
+            const allUsers = StorageService.getAllUsers();
+            
+            // Сохраняем заказы в state
+            setOrders(fetchedOrders);
+            setUsers(allUsers);
+            
+            const totalRevenue = fetchedOrders.reduce((sum, o) => sum + (o.StatusId === OrderStatus.COMPLETED ? o.TotalAmount : 0), 0);
+            
+            const statusCounts = fetchedOrders.reduce((acc, o) => {
+                const statusName = o.StatusId === 1 ? 'New' : o.StatusId === 2 ? 'Proc' : o.StatusId === 3 ? 'Done' : 'Canc';
+                acc[statusName] = (acc[statusName] || 0) + 1;
+                return acc;
+            }, {} as Record<string, number>);
 
-        const chartData = Object.keys(statusCounts).map(key => ({
-            name: key,
-            count: statusCounts[key]
-        }));
+            const chartData = Object.keys(statusCounts).map(key => ({
+                name: key,
+                count: statusCounts[key]
+            }));
 
-        setStats({
-            totalOrders: orders.length,
-            totalRevenue,
-            totalUsers: allUsers.length,
-            chartData
-        });
+            setStats({
+                totalOrders: fetchedOrders.length,
+                totalRevenue,
+                totalUsers: allUsers.length,
+                chartData
+            });
+        } catch (error) {
+            console.error('Ошибка загрузки данных:', error);
+            alert('Не удалось загрузить данные. Убедитесь, что вы авторизованы.');
+        }
     };
 
     useEffect(() => {
@@ -68,54 +78,98 @@ const Dashboard: React.FC = () => {
         }
     };
 
-    const handleExportPDF = async () => {
-        const doc = new jsPDF();
+    // Функция для получения названия статуса
+    const getStatusName = (statusId: number): string => {
+        switch (statusId) {
+            case OrderStatus.CREATED: return 'Создан';
+            case OrderStatus.PROCESSING: return 'В обработке';
+            case OrderStatus.ASSEMBLED: return 'Собран';
+            case OrderStatus.READY: return 'Готов к выдаче';
+            case OrderStatus.COMPLETED: return 'Выполнен';
+            case OrderStatus.CANCELLED: return 'Отменён';
+            default: return 'Неизвестно';
+        }
+    };
 
-const arrayBufferToBase64 = (buffer: ArrayBuffer) => {
-    let binary = '';
-    const bytes = new Uint8Array(buffer);
-    const len = bytes.byteLength;
-    for (let i = 0; i < len; i++) {
-        binary += String.fromCharCode(bytes[i]);
+    const handleExportPDF = async () => {
+    const doc = new jsPDF();
+
+    const arrayBufferToBase64 = (buffer: ArrayBuffer) => {
+        let binary = '';
+        const bytes = new Uint8Array(buffer);
+        const len = bytes.byteLength;
+        for (let i = 0; i < len; i++) {
+            binary += String.fromCharCode(bytes[i]);
+        }
+        return btoa(binary);
+    };
+
+    try {
+        const fontData = await fetch(RobotoTTF).then(res => res.arrayBuffer());
+        const fontBase64 = arrayBufferToBase64(fontData);
+        doc.addFileToVFS('Roboto.ttf', fontBase64);
+        doc.addFont('Roboto.ttf', 'Roboto', 'normal');
+        doc.setFont('Roboto', 'normal');
+    } catch (error) {
+        console.error('Ошибка загрузки шрифта, используем стандартный', error);
+        doc.setFont('helvetica', 'normal');
     }
-    return btoa(binary);
+
+    doc.setFontSize(20);
+    doc.text('SantehOrders - System Report', 14, 22);
+
+    doc.setFontSize(12);
+    const currentDate = new Date().toLocaleString('ru-RU');
+    doc.text(`Дата генерации: ${currentDate}`, 14, 32);
+    doc.text(`Общая выручка: ${stats.totalRevenue.toLocaleString('ru-RU')} ₽`, 14, 40);
+    doc.text(`Всего заказов: ${stats.totalOrders}`, 14, 48);
+    doc.text(`Всего пользователей: ${stats.totalUsers}`, 14, 56);
+    const STATUS_LABELS: Record<number, string> = {
+    1: 'Новый',
+    2: 'В обработке',
+    3: 'Выполнен',
+    4: 'Отменен',
 };
 
-const fontData = await fetch(RobotoTTF).then(res => res.arrayBuffer());
-const fontBase64 = arrayBufferToBase64(fontData);
-doc.addFileToVFS('Roboto.ttf', fontBase64);
-doc.addFont('Roboto.ttf', 'Roboto', 'normal');
-doc.setFont('Roboto');
+const filteredOrders: Order[] = orders; // замените на вашу фильтрацию
 
 
-        doc.setFontSize(20);
-        doc.text('SantehOrders - System Report', 14, 22);
+    const tableData = filteredOrders.map(o => [
+        o.OrderId.toString(),
+        new Date(o.CreatedAt).toLocaleDateString(),
+        o.UserName || '',
+        o.TotalAmount.toLocaleString('ru-RU') + ' ₽',
+        STATUS_LABELS[o.StatusId] || 'Unknown'
+    ]);
 
-        doc.setFontSize(12);
-        doc.text(`Дата генерации: ${new Date().toLocaleString()}`, 14, 32);
-        doc.text(`Общая выручка: ${stats.totalRevenue.toLocaleString()} ₽`, 14, 40);
-        doc.text(`Всего заказов: ${stats.totalOrders}`, 14, 48);
-        doc.text(`Всего пользователей: ${stats.totalUsers}`, 14, 56);
+   autoTable(doc, {
+        head: [['ID', 'Data', 'Client', 'Amount', 'Status']],
+        body: tableData.map(row => [
+            row[0], // ID
+            row[1], // Дата
+            row[2], // Клиент
+            row[3], // Сумма
+            row[4]  // Статус
+        ]),
+        startY: 66,
+        styles: {
+            font: 'Roboto',
+            fontSize: 10,
+        },
+        headStyles: {
+            fillColor: [41, 128, 185],
+            textColor: 255,
+            font: 'helvetica',
+            fontStyle: 'bold',
+        },
+        alternateRowStyles: {
+            fillColor: [240, 240, 240],
+        },
+    });
 
-        const orderRows = orders.map(o => [
-            o.OrderId,
-            o.UserId,
-            o.StatusId,
-            o.TotalAmount.toFixed(2),
-            new Date(o.CreatedAt).toLocaleString(),
-            new Date(o.UpdatedAt).toLocaleString()
-        ]);
+    doc.save('system_report.pdf');
+};
 
-        autoTable(doc, {
-            startY: 65,
-            head: [['OrderId', 'UserId', 'StatusId', 'TotalAmount', 'CreatedAt', 'UpdatedAt']],
-            body: orderRows,
-            styles: { font: 'Roboto', fontSize: 10 },
-            headStyles: { fillColor: [41, 128, 185], textColor: 255 }
-        });
-
-        doc.save('system_report.pdf');
-    };
 
     const handleImportJSON = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -155,13 +209,13 @@ doc.setFont('Roboto');
                         onClick={handleExportPDF}
                         className="flex items-center gap-2 bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 text-sm font-medium transition-colors"
                     >
-                        <FileText size={18} /> Экспорт отчета системы (PDF)
+                        <FileText size={18} /> Экспорт отчета (PDF)
                     </button>
                     <button 
                         onClick={() => fileInputRef.current?.click()}
                         className="flex items-center gap-2 bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 text-sm font-medium transition-colors"
                     >
-                        <Upload size={18} /> Импорт базы данных (JSON)
+                        <Upload size={18} /> Импорт БД (JSON)
                     </button>
                     <input 
                         type="file" 

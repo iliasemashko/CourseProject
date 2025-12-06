@@ -2,7 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using SantehOrders.API.Models;
 
 
-namespace SantehOrders.API.Data {
+namespace SantehOrders.API.Data
+{
     public class SantehContext : DbContext
     {
         public SantehContext(DbContextOptions<SantehContext> options) : base(options) { }
@@ -41,24 +42,25 @@ namespace SantehOrders.API.Data {
             );
 
             modelBuilder.Entity<Order>(entity =>
-            {
-                entity.HasKey(o => o.OrderId);
+{
+    entity.HasKey(o => o.OrderId);
 
-                entity.HasOne(o => o.User)
-                      .WithMany()
-                      .HasForeignKey(o => o.UserId)
-                      .IsRequired(false);
+    entity.HasOne(o => o.User)
+          .WithMany()
+          .HasForeignKey(o => o.UserId)
+          .IsRequired(false);
 
-                entity.HasOne(o => o.Status)
-                      .WithMany()
-                      .HasForeignKey(o => o.StatusId)
-                      .IsRequired(false);
+    entity.HasOne(o => o.Status)
+          .WithMany()
+          .HasForeignKey(o => o.StatusId)
+          .IsRequired(false);
 
-                entity.HasMany(o => o.Items)
-                      .WithOne()
-                      .HasForeignKey(i => i.OrderId)
-                      .IsRequired(false);
-            });
+    entity.HasMany(o => o.Items)
+          .WithOne(i => i.Order)
+          .HasForeignKey(i => i.OrderId)
+          .IsRequired(true);
+});
+
         }
     }
 }
