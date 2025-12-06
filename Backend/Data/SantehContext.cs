@@ -60,7 +60,7 @@ namespace SantehOrders.API.Data
           .HasForeignKey(i => i.OrderId)
           .IsRequired(true);
 });
-
+    
         }
     }
 }

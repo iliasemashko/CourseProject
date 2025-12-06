@@ -71,6 +71,11 @@ namespace SantehOrders.API.Controllers
         [Authorize]
         public async Task<IActionResult> Create(CreateOrderDto dto)
         {
+            var productIds = dto.Items.Select(i => i.ProductId).ToList();
+            var products = await _context.Products
+                .Where(p => productIds.Contains(p.ProductId))
+                .ToDictionaryAsync(p => p.ProductId);
+
             var order = new Order
             {
                 UserId = dto.UserId,
@@ -80,11 +85,12 @@ namespace SantehOrders.API.Controllers
                 Items = dto.Items.Select(i => new OrderItem
                 {
                     ProductId = i.ProductId,
-                    Quantity = i.Quantity
+                    Quantity = i.Quantity,
+                    Price = products[i.ProductId].Price
                 }).ToList()
             };
 
-            order.TotalAmount = order.Items.Sum(i => i.Quantity * (i.Product?.Price ?? 0));
+            order.TotalAmount = order.Items.Sum(i => i.Quantity * i.Price);
 
             _context.Orders.Add(order);
             await _context.SaveChangesAsync();
@@ -100,7 +106,7 @@ namespace SantehOrders.API.Controllers
                 Items = order.Items.Select(i => new OrderItemDto
                 {
                     ProductId = i.ProductId,
-                    ProductName = i.Product?.Name,
+                    ProductName = products[i.ProductId].Name,
                     Quantity = i.Quantity
                 }).ToList()
             };

@@ -30,16 +30,16 @@
                 if (await _context.Users.AnyAsync(u => u.Email == dto.Email))
                     return BadRequest("Email уже используется");
 
-                var user = new User
-                {
-                    FullName = dto.FullName,
-                    Email = dto.Email,
-                    RoleId = dto.RoleId,
-                    PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
-                    CreatedAt = DateTime.UtcNow
-                };
-
-                _context.Users.Add(user);
+            var user = new User
+            {
+                FullName = dto.FullName,
+                Email = dto.Email,
+                RoleId = 1,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
+                CreatedAt = DateTime.UtcNow
+            };
+            
+            _context.Users.Add(user);
                 await _context.SaveChangesAsync();
 
                 var token = GenerateToken(user);
