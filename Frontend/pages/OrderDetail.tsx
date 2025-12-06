@@ -322,13 +322,6 @@ const OrderDetail: React.FC<OrderDetailProps> = ({ user }) => {
                                                 {(item.Price * item.Quantity).toLocaleString()} ₽
                                             </p>
                                         </div>
-                                        <button
-                                            onClick={() => handleViewProduct(item.ProductId)}
-                                            disabled={productLoading}
-                                            className="text-sm px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium whitespace-nowrap"
-                                        >
-                                            {productLoading ? 'Загрузка...' : 'Подробнее'}
-                                        </button>
                                     </div>
                                 </div>
                             ))

@@ -61,11 +61,40 @@ namespace SantehOrders.API.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
-            var order = await _context.Orders.FirstOrDefaultAsync(o => o.OrderId == id);
+            var order = await _context.Orders
+                .Include(o => o.User)
+                .Include(o => o.Status)
+                .Include(o => o.Items)
+                    .ThenInclude(i => i.Product)
+                .FirstOrDefaultAsync(o => o.OrderId == id);
 
-            return Ok(order);
+            if (order == null) return NotFound();
+
+            var orderDto = new OrderDto
+            {
+                OrderId = order.OrderId,
+                UserId = order.UserId,
+                UserName = order.User?.FullName,
+                StatusId = order.StatusId,
+                Status = order.Status?.Name,
+                CreatedAt = order.CreatedAt,
+                UpdatedAt = order.UpdatedAt,
+                TotalAmount = order.TotalAmount,
+                AssignedToUserId = null,
+                AssignedToName = null,
+                Items = order.Items.Select(i => new OrderItemDto
+                {
+                    OrderItemId = i.OrderItemId,
+                    OrderId = i.OrderId,
+                    ProductId = i.ProductId,
+                    ProductName = i.Product?.Name,
+                    Quantity = i.Quantity,
+                    Price = i.Price
+                }).ToList()
+            };
+
+            return Ok(orderDto);
         }
-
 
         [HttpPost]
         [Authorize]

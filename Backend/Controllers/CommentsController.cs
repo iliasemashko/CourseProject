@@ -84,7 +84,7 @@ namespace SantehOrders.API.Controllers
                 }
 
                 // Получаем ID текущего пользователя из JWT токена
-                var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == "UserId");
+                var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
                 if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
                 {
                     return Unauthorized(new { message = "Не удалось определить пользователя" });
@@ -193,12 +193,12 @@ namespace SantehOrders.API.Controllers
                     return NotFound(new { message = "Комментарий не найден" });
                 }
 
-                // Получаем ID текущего пользователя
-                var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == "UserId");
+                var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
                 if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
                 {
                     return Unauthorized(new { message = "Не удалось определить пользователя" });
                 }
+
 
                 // Проверяем права: редактировать может только автор
                 if (comment.UserId != userId)
