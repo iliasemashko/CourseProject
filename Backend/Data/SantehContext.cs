@@ -39,6 +39,26 @@ namespace SantehOrders.API.Data {
                 new OrderStatus { StatusId = 3, Name = "Выполнен" },
                 new OrderStatus { StatusId = 4, Name = "Отменён" }
             );
+
+            modelBuilder.Entity<Order>(entity =>
+            {
+                entity.HasKey(o => o.OrderId);
+
+                entity.HasOne(o => o.User)
+                      .WithMany()
+                      .HasForeignKey(o => o.UserId)
+                      .IsRequired(false);
+
+                entity.HasOne(o => o.Status)
+                      .WithMany()
+                      .HasForeignKey(o => o.StatusId)
+                      .IsRequired(false);
+
+                entity.HasMany(o => o.Items)
+                      .WithOne()
+                      .HasForeignKey(i => i.OrderId)
+                      .IsRequired(false);
+            });
         }
     }
 }

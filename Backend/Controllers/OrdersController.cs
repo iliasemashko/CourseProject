@@ -20,11 +20,30 @@ namespace SantehOrders.API.Controllers
         [Authorize]
         public async Task<IActionResult> GetAll()
         {
-            // Простая версия: возвращаем все строки из таблицы Orders без фильтрации и проекций
-            // Это полезно для проверки данных в Swagger/DB — возвращаем сущности Order напрямую.
-            var orders = await _context.Orders.ToListAsync();
-            return Ok(orders);
+            var result = await _context.Orders
+                .Select(o => new
+                {
+                    o.OrderId,
+                    o.UserId,
+                    FullName = o.User.FullName,
+                    o.StatusId,
+                    StatusName = o.Status.Name,
+                    o.TotalAmount,
+                    o.CreatedAt,
+                    o.UpdatedAt,
+                    Items = o.Items.Select(i => new
+                    {
+                        i.OrderItemId,
+                        i.ProductId,
+                        i.Quantity,
+                        i.Price
+                    }).ToList()
+                })
+                .ToListAsync();
+
+            return Ok(result);
         }
+
 
         // DEBUG: return raw orders from DB (no filtering) to help verify data in development
         [HttpGet("dbg/all")]

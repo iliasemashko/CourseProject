@@ -1,11 +1,13 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { User, OrderStatus, Role } from '../types';
+import { User, OrderStatus, Role, Order } from '../types';
 import { StorageService } from '../services/storageService';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Users, ShoppingBag, DollarSign, Lock, Unlock, Plus, FileText, Upload, ShoppingCart } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import RobotoTTF from '../fonts/Roboto-VariableFont_wdth,wght.ttf';
 import { useNavigate } from 'react-router-dom';
+
 
 const Dashboard: React.FC = () => {
     const navigate = useNavigate();
@@ -19,6 +21,8 @@ const Dashboard: React.FC = () => {
     const [isUserModalOpen, setIsUserModalOpen] = useState(false);
     const [newUser, setNewUser] = useState({ FullName: '', Email: '', PasswordHash: '', RoleId: Role.CLIENT });
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const [orders, getOrders] = useState<Order[]>([]);
 
     const refreshData = () => {
         const orders = StorageService.getOrders();
@@ -64,33 +68,50 @@ const Dashboard: React.FC = () => {
         }
     };
 
-    const handleExportPDF = () => {
+    const handleExportPDF = async () => {
         const doc = new jsPDF();
-        
-        // Title
+
+const arrayBufferToBase64 = (buffer: ArrayBuffer) => {
+    let binary = '';
+    const bytes = new Uint8Array(buffer);
+    const len = bytes.byteLength;
+    for (let i = 0; i < len; i++) {
+        binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
+};
+
+const fontData = await fetch(RobotoTTF).then(res => res.arrayBuffer());
+const fontBase64 = arrayBufferToBase64(fontData);
+doc.addFileToVFS('Roboto.ttf', fontBase64);
+doc.addFont('Roboto.ttf', 'Roboto', 'normal');
+doc.setFont('Roboto');
+
+
         doc.setFontSize(20);
         doc.text('SantehOrders - System Report', 14, 22);
-        
-        // Stats
-        doc.setFontSize(12);
-        doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 32);
-        doc.text(`Total Revenue: ${stats.totalRevenue.toLocaleString()} RUB`, 14, 40);
-        doc.text(`Total Orders: ${stats.totalOrders}`, 14, 48);
-        doc.text(`Total Users: ${stats.totalUsers}`, 14, 56);
 
-        // Users Table
-        const userRows = users.map(u => [
-            u.UserId, 
-            u.FullName, 
-            u.Email, 
-            u.RoleId === 1 ? 'Client' : u.RoleId === 2 ? 'Employee' : 'Admin', 
-            u.IsBlocked ? 'Blocked' : 'Active'
+        doc.setFontSize(12);
+        doc.text(`Дата генерации: ${new Date().toLocaleString()}`, 14, 32);
+        doc.text(`Общая выручка: ${stats.totalRevenue.toLocaleString()} ₽`, 14, 40);
+        doc.text(`Всего заказов: ${stats.totalOrders}`, 14, 48);
+        doc.text(`Всего пользователей: ${stats.totalUsers}`, 14, 56);
+
+        const orderRows = orders.map(o => [
+            o.OrderId,
+            o.UserId,
+            o.StatusId,
+            o.TotalAmount.toFixed(2),
+            new Date(o.CreatedAt).toLocaleString(),
+            new Date(o.UpdatedAt).toLocaleString()
         ]);
 
         autoTable(doc, {
             startY: 65,
-            head: [['ID', 'Name', 'Email', 'Role', 'Status']],
-            body: userRows,
+            head: [['OrderId', 'UserId', 'StatusId', 'TotalAmount', 'CreatedAt', 'UpdatedAt']],
+            body: orderRows,
+            styles: { font: 'Roboto', fontSize: 10 },
+            headStyles: { fillColor: [41, 128, 185], textColor: 255 }
         });
 
         doc.save('system_report.pdf');
@@ -113,7 +134,6 @@ const Dashboard: React.FC = () => {
             } catch (error) {
                 alert('Ошибка чтения файла: ' + error);
             }
-            // Reset input
             if (fileInputRef.current) fileInputRef.current.value = '';
         };
         reader.readAsText(file);

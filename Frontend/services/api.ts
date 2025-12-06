@@ -134,7 +134,6 @@ export async function getOrders(): Promise<Order[]> {
   if (!res.ok) throw new Error(await res.text());
   const data = await res.json();
 
-  // Normalize server response (camelCase or PascalCase) into frontend `Order` shape
   if (Array.isArray(data)) {
     return data.map((o: any) => ({
       OrderId: o.orderId ?? o.OrderId,
@@ -143,7 +142,7 @@ export async function getOrders(): Promise<Order[]> {
       TotalAmount: o.totalAmount ?? o.TotalAmount,
       CreatedAt: o.createdAt ?? o.CreatedAt,
       UpdatedAt: o.updatedAt ?? o.UpdatedAt,
-      UserName: o.userName ?? o.UserName ?? `User ${o.userId ?? o.UserId}`,
+      UserName: o.fullName ?? o.FullName ?? `User ${o.userId ?? o.UserId}`,
       Items: Array.isArray(o.items)
         ? o.items.map((i: any) => ({
             OrderItemId: i.orderItemId ?? i.OrderItemId,
@@ -173,6 +172,7 @@ export async function getOrders(): Promise<Order[]> {
 
   return [];
 }
+
 
 export async function getOrder(id: number): Promise<Order> {
   const res = await fetch(`${API_BASE}/orders/${id}`, {
