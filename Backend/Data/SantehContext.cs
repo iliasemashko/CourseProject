@@ -42,25 +42,40 @@ namespace SantehOrders.API.Data
             );
 
             modelBuilder.Entity<Order>(entity =>
-{
-    entity.HasKey(o => o.OrderId);
+            {
+                entity.HasKey(o => o.OrderId);
 
-    entity.HasOne(o => o.User)
-          .WithMany()
-          .HasForeignKey(o => o.UserId)
-          .IsRequired(false);
+                entity.HasOne(o => o.User)
+                      .WithMany()
+                      .HasForeignKey(o => o.UserId)
+                      .IsRequired(false);
 
-    entity.HasOne(o => o.Status)
-          .WithMany()
-          .HasForeignKey(o => o.StatusId)
-          .IsRequired(false);
+                entity.HasOne(o => o.Status)
+                      .WithMany()
+                      .HasForeignKey(o => o.StatusId)
+                      .IsRequired(false);
 
-    entity.HasMany(o => o.Items)
-          .WithOne(i => i.Order)
-          .HasForeignKey(i => i.OrderId)
-          .IsRequired(true);
-});
-    
+                entity.HasOne(o => o.AssignedEmployee)
+                      .WithMany()
+                      .HasForeignKey(o => o.AssignedEmployeeId)
+                      .IsRequired(false)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasMany(o => o.Items)
+                      .WithOne(i => i.Order)
+                      .HasForeignKey(i => i.OrderId)
+                      .IsRequired(true);
+            });
+
+            modelBuilder.Entity<OrderItem>(entity =>
+            {
+                entity.HasKey(i => i.OrderItemId);
+
+                entity.HasOne(i => i.Product)
+                      .WithMany()
+                      .HasForeignKey(i => i.ProductId)
+                      .IsRequired(true);
+            });
         }
     }
 }

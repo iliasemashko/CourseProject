@@ -88,21 +88,50 @@ namespace SantehOrders.API.Controllers
             return Ok(p);
         }
 
-        /// <summary>
-        /// Обновить продукт
-        /// </summary>
         [HttpPut("{id}")]
         [Authorize]
-        public async Task<IActionResult> Update(int id, [FromBody] Product changed)
+        public async Task<IActionResult> Update(
+    int id,
+    [FromForm] string name,
+    [FromForm] decimal price,
+    [FromForm] string? description,
+    [FromForm] string? category,
+    [FromForm] int? stock,
+    [FromForm] IFormFile? image)
         {
-            var p = await _context.Products.FindAsync(id);
-            if (p == null) return NotFound();
+            var product = await _context.Products.FindAsync(id);
+            if (product == null) return NotFound();
 
-            p.Name = changed.Name;
-            p.Description = changed.Description;
-            p.Price = changed.Price;
-            p.Category = changed.Category;
-            p.Stock = changed.Stock;
+            product.Name = name;
+            product.Description = description ?? "";
+            product.Price = price;
+            product.Category = category ?? "";
+            product.Stock = stock ?? 0;
+
+            if (image != null)
+            {
+                var uploadsFolder = Path.Combine(_environment.WebRootPath, "images", "products");
+                Directory.CreateDirectory(uploadsFolder);
+
+                var fileName = $"{Guid.NewGuid()}_{image.FileName}";
+                var filePath = Path.Combine(uploadsFolder, fileName);
+
+                using (var fileStream = new FileStream(filePath, FileMode.Create))
+                {
+                    await image.CopyToAsync(fileStream);
+                }
+
+                // Можно удалить старое изображение, если нужно
+                if (!string.IsNullOrEmpty(product.ImageName))
+                {
+                    var oldFilePath = Path.Combine(uploadsFolder, product.ImageName);
+                    if (System.IO.File.Exists(oldFilePath))
+                        System.IO.File.Delete(oldFilePath);
+                }
+
+                product.ImageName = fileName;
+                product.ImageType = image.ContentType;
+            }
 
             await _context.SaveChangesAsync();
             return NoContent();

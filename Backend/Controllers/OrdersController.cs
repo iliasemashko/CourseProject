@@ -25,12 +25,14 @@ namespace SantehOrders.API.Controllers
                 {
                     o.OrderId,
                     o.UserId,
-                    FullName = o.User.FullName,
+                    UserName = o.User.FullName,
                     o.StatusId,
                     StatusName = o.Status.Name,
                     o.TotalAmount,
                     o.CreatedAt,
                     o.UpdatedAt,
+                    AssignedToUserId = o.AssignedEmployeeId,
+                    AssignedToName = o.AssignedEmployee.FullName,
                     Items = o.Items.Select(i => new
                     {
                         i.OrderItemId,
@@ -43,6 +45,7 @@ namespace SantehOrders.API.Controllers
 
             return Ok(result);
         }
+
 
 
         // DEBUG: return raw orders from DB (no filtering) to help verify data in development
@@ -64,9 +67,11 @@ namespace SantehOrders.API.Controllers
             var order = await _context.Orders
                 .Include(o => o.User)
                 .Include(o => o.Status)
+                .Include(o => o.AssignedEmployee)
                 .Include(o => o.Items)
                     .ThenInclude(i => i.Product)
                 .FirstOrDefaultAsync(o => o.OrderId == id);
+
 
             if (order == null) return NotFound();
 
@@ -80,8 +85,8 @@ namespace SantehOrders.API.Controllers
                 CreatedAt = order.CreatedAt,
                 UpdatedAt = order.UpdatedAt,
                 TotalAmount = order.TotalAmount,
-                AssignedToUserId = null,
-                AssignedToName = null,
+                AssignedToUserId = order.AssignedEmployeeId,
+                AssignedToName = order.AssignedEmployee?.FullName,
                 Items = order.Items.Select(i => new OrderItemDto
                 {
                     OrderItemId = i.OrderItemId,
@@ -95,6 +100,9 @@ namespace SantehOrders.API.Controllers
 
             return Ok(orderDto);
         }
+
+
+
 
         [HttpPost]
         [Authorize]
