@@ -89,34 +89,78 @@ export async function getProduct(id: number): Promise<Product> {
   return res.json();
 }
 
-export async function createProduct(product: Partial<Product>, imageFile?: File): Promise<Product> {
+export async function createProduct(
+  product: Partial<Product>,
+  imageFile?: File
+): Promise<Product> {
   if (!jwtToken) throw new Error("Not authenticated");
-  
+
   const formData = new FormData();
-  if (product.Name) formData.append('name', product.Name);
-  if (product.Price != null) formData.append('price', product.Price.toString());
-  if (product.Description) formData.append('description', product.Description);
-  if (product.Category) formData.append('category', product.Category);
-  if (product.Stock != null) formData.append('stock', product.Stock.toString());
-  if (imageFile) formData.append('image', imageFile);
-  
+  if (product.Name) formData.append('Name', product.Name);
+  if (product.Price != null) formData.append('Price', product.Price.toString());
+  if (product.Description) formData.append('Description', product.Description);
+  if (product.Category) formData.append('Category', product.Category);
+  if (product.Stock != null) formData.append('Stock', product.Stock.toString());
+  if (imageFile) formData.append('Image', imageFile); 
+
   const res = await fetch(`${API_BASE}/products`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${jwtToken}` },
     body: formData,
   });
-  if (!res.ok) throw new Error(await res.text());
-  return res.json();
+
+  if (!res.ok) {
+    let errorMessage: string;
+    const contentType = res.headers.get('Content-Type');
+    if (contentType?.includes('application/json')) {
+      const data = await res.json();
+      errorMessage = data?.title || JSON.stringify(data);
+    } else {
+      errorMessage = await res.text();
+    }
+    throw new Error(errorMessage);
+  }
+
+  return res.json() as Promise<Product>;
 }
 
-export async function updateProduct(id: number, product: Partial<Product>): Promise<void> {
-  const res = await fetch(`${API_BASE}/products/${id}`, {
+
+export async function updateProduct(
+  productId: number,
+  product: Partial<Product>,
+  imageFile?: File
+): Promise<Product> {
+  if (!jwtToken) throw new Error("Not authenticated");
+
+  const formData = new FormData();
+  if (product.Name) formData.append('Name', product.Name);
+  if (product.Price != null) formData.append('Price', product.Price.toString());
+  if (product.Description) formData.append('Description', product.Description);
+  if (product.Category) formData.append('Category', product.Category);
+  if (product.Stock != null) formData.append('Stock', product.Stock.toString());
+  if (imageFile) formData.append('Image', imageFile); // файл изображения
+
+  const res = await fetch(`${API_BASE}/products/${productId}`, {
     method: 'PUT',
-    headers: authHeaders(),
-    body: JSON.stringify(product),
+    headers: { Authorization: `Bearer ${jwtToken}` },
+    body: formData,
   });
-  if (!res.ok) throw new Error(await res.text());
+
+  if (!res.ok) {
+    let errorMessage: string;
+    const contentType = res.headers.get('Content-Type');
+    if (contentType?.includes('application/json')) {
+      const data = await res.json();
+      errorMessage = data?.title || JSON.stringify(data);
+    } else {
+      errorMessage = await res.text();
+    }
+    throw new Error(errorMessage);
+  }
+
+  return res.json() as Promise<Product>;
 }
+
 
 export async function deleteProduct(id: number): Promise<void> {
   const res = await fetch(`${API_BASE}/products/${id}`, {

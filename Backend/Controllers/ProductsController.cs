@@ -34,48 +34,43 @@ namespace SantehOrders.API.Controllers
         /// </summary>
         [HttpPost]
         [Authorize]
-        public async Task<IActionResult> Create(
-            [FromForm] string name,
-            [FromForm] decimal price,
-            [FromForm] string? description,
-            [FromForm] string? category,
-            [FromForm] int? stock,
-            [FromForm] IFormFile? image)
+        public async Task<IActionResult> CreateProduct([FromForm] ProductCreateDto dto)
         {
+            if (dto.Image == null || dto.Image.Length == 0)
+                return BadRequest("Изображение не указано");
+
+            var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", "products");
+            if (!Directory.Exists(uploadsFolder))
+                Directory.CreateDirectory(uploadsFolder);
+
+            var uniqueFileName = $"{Guid.NewGuid()}{Path.GetExtension(dto.Image.FileName)}";
+            var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+            await using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await dto.Image.CopyToAsync(stream);
+            }
+
             var product = new Product
             {
-                Name = name,
-                Price = price,
-                Description = description ?? "",
-                Category = category ?? "",
-                Stock = stock ?? 0,
+                Name = dto.Name,
+                Price = dto.Price,
+                Description = dto.Description,
+                Category = dto.Category,
+                Stock = dto.Stock,
+                ImageName = uniqueFileName,
+                ImageType = dto.Image.ContentType,
                 CreatedAt = DateTime.UtcNow
             };
-
-            if (image != null)
-            {
-                // Сохранить изображение в файловую систему
-                var uploadsFolder = Path.Combine(_environment.WebRootPath, "images", "products");
-                Directory.CreateDirectory(uploadsFolder);
-                
-                var fileName = $"{Guid.NewGuid()}_{image.FileName}";
-                var filePath = Path.Combine(uploadsFolder, fileName);
-                
-                using (var fileStream = new FileStream(filePath, FileMode.Create))
-                {
-                    await image.CopyToAsync(fileStream);
-                }
-                
-                product.ImageName = fileName;
-                product.ImageType = image.ContentType;
-                // Image поле оставляем пустым (используем файловую систему)
-            }
 
             _context.Products.Add(product);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(Get), new { id = product.ProductId }, product);
+            var imageUrl = $"/images/products/{uniqueFileName}";
+
+            return Ok(new { product, ImageUrl = imageUrl });
         }
+
 
         /// <summary>
         /// Получить продукт по ID
@@ -90,38 +85,37 @@ namespace SantehOrders.API.Controllers
 
         [HttpPut("{id}")]
         [Authorize]
-        public async Task<IActionResult> Update(
-    int id,
-    [FromForm] string name,
-    [FromForm] decimal price,
-    [FromForm] string? description,
-    [FromForm] string? category,
-    [FromForm] int? stock,
-    [FromForm] IFormFile? image)
+        public async Task<IActionResult> UpdateProduct(int id, [FromForm] ProductUpdateDto dto)
         {
             var product = await _context.Products.FindAsync(id);
-            if (product == null) return NotFound();
+            if (product == null)
+                return NotFound();
 
-            product.Name = name;
-            product.Description = description ?? "";
-            product.Price = price;
-            product.Category = category ?? "";
-            product.Stock = stock ?? 0;
+            if (!string.IsNullOrEmpty(dto.Name))
+                product.Name = dto.Name;
+            if (dto.Price.HasValue)
+                product.Price = dto.Price.Value;
+            if (dto.Description != null)
+                product.Description = dto.Description;
+            if (dto.Category != null)
+                product.Category = dto.Category;
+            if (dto.Stock.HasValue)
+                product.Stock = dto.Stock.Value;
 
-            if (image != null)
+            if (dto.Image != null && dto.Image.Length > 0)
             {
-                var uploadsFolder = Path.Combine(_environment.WebRootPath, "images", "products");
-                Directory.CreateDirectory(uploadsFolder);
+                var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", "products");
+                if (!Directory.Exists(uploadsFolder))
+                    Directory.CreateDirectory(uploadsFolder);
 
-                var fileName = $"{Guid.NewGuid()}_{image.FileName}";
-                var filePath = Path.Combine(uploadsFolder, fileName);
+                var uniqueFileName = $"{Guid.NewGuid()}{Path.GetExtension(dto.Image.FileName)}";
+                var filePath = Path.Combine(uploadsFolder, uniqueFileName);
 
-                using (var fileStream = new FileStream(filePath, FileMode.Create))
+                await using (var stream = new FileStream(filePath, FileMode.Create))
                 {
-                    await image.CopyToAsync(fileStream);
+                    await dto.Image.CopyToAsync(stream);
                 }
 
-                // Можно удалить старое изображение, если нужно
                 if (!string.IsNullOrEmpty(product.ImageName))
                 {
                     var oldFilePath = Path.Combine(uploadsFolder, product.ImageName);
@@ -129,13 +123,16 @@ namespace SantehOrders.API.Controllers
                         System.IO.File.Delete(oldFilePath);
                 }
 
-                product.ImageName = fileName;
-                product.ImageType = image.ContentType;
+                product.ImageName = uniqueFileName;
+                product.ImageType = dto.Image.ContentType;
             }
 
             await _context.SaveChangesAsync();
-            return NoContent();
+            var imageUrl = !string.IsNullOrEmpty(product.ImageName) ? $"/images/products/{product.ImageName}" : null;
+
+            return Ok(new { product, ImageUrl = imageUrl });
         }
+
 
         /// <summary>
         /// Удалить продукт

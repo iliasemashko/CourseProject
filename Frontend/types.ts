@@ -35,10 +35,10 @@ export interface Product {
   Category: string;
   Stock: number;
   CreatedAt: string;
-  ImageUrl?: string;
-  Image?: Uint8Array;
-  ImageName?: string;
-  ImageType?: string;
+  ImageUrl?: string;    // URL для отображения на фронтенде
+  Image?: File;         // выбранный файл перед отправкой
+  ImageName?: string;   // имя файла на сервере после загрузки
+  ImageType?: string;   // MIME-тип файла
 }
 
 export interface OrderItem {

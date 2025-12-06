@@ -4,6 +4,7 @@ import { STATUS_LABELS, STATUS_COLORS } from '../constants';
 import { FileText, Eye, CheckCircle, Trash2 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import RobotoTTF from '../fonts/Roboto-VariableFont_wdth,wght.ttf';
 import { useNavigate } from 'react-router-dom';
 import { getOrders, deleteOrder } from '../services/api';
 
@@ -70,29 +71,58 @@ const Orders: React.FC<OrdersProps> = ({ user }) => {
     return count;
   };
 
-const exportPDF = () => {
+const exportPDF = async () => {
   const doc = new jsPDF('p', 'mm', 'a4');
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(18);
-  doc.text('Отчет по заказам - SantehOrders', 14, 22);
+  
+  // Загружаем шрифт и конвертируем в base64
+  const response = await fetch(RobotoTTF);
+  const fontBlob = await response.blob();
+  const reader = new FileReader();
+  
+  reader.onloadend = () => {
+    const base64Font = (reader.result as string).split(',')[1];
+    
+    // Добавляем шрифт Roboto
+    doc.addFileToVFS('Roboto.ttf', base64Font);
+    doc.addFont('Roboto.ttf', 'Roboto', 'normal');
+    doc.setFont('Roboto');
+  
+    
+    doc.setFontSize(18);
+    doc.text('Отчет по заказам - SantehOrders', 14, 22);
 
-  const tableData = filteredOrders.map(o => [
-    o.OrderId.toString(),
-    new Date(o.CreatedAt).toLocaleDateString(),
-    o.UserName || '',
-    o.TotalAmount.toLocaleString() + ' ₽',
-    STATUS_LABELS[o.StatusId] || 'Unknown',
-    o.AssignedToName || 'Не назначен'
-  ]) as string[][];
+    const tableData = filteredOrders.map(o => [
+      o.OrderId.toString(),
+      new Date(o.CreatedAt).toLocaleDateString('ru-RU'),
+      o.UserName || '',
+      o.TotalAmount.toLocaleString('ru-RU') + ' ₽',
+      STATUS_LABELS[o.StatusId] || 'Неизвестно',
+      o.AssignedToName || 'Не назначен'
+    ]) as string[][];
 
-  autoTable(doc, {
-    head: [['ID', 'Дата', 'Клиент', 'Сумма', 'Статус', 'Исполнитель']],
-    body: tableData,
-    startY: 30,
-    styles: { font: 'helvetica' }
-  });
+    autoTable(doc, {
+      head: [['ID', 'Date', 'Client', 'Amount', 'Status', 'Executor']],
+      body: tableData,
+      startY: 30,
+      styles: { 
+        font: 'Roboto',
+        fontSize: 10,
+        cellPadding: 3
+      },
+      headStyles: {
+        fillColor: [6, 182, 212], // cyan-500
+        textColor: 255,
+        fontStyle: 'bold'
+      },
+      alternateRowStyles: {
+        fillColor: [249, 250, 251] // gray-50
+      }
+    });
 
-  doc.save('orders_report.pdf');
+    doc.save('orders_report.pdf');
+  };
+  
+  reader.readAsDataURL(fontBlob);
 };
 
   const handleStatusChange = async (orderId: number, newStatusStr: string) => {

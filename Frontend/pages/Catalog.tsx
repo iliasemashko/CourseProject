@@ -22,6 +22,7 @@ const Catalog: React.FC<CatalogProps> = ({ user, addToCart }) => {
   // Admin Edit State
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Partial<Product>>({});
+  
 
   // Auth Modal State
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -87,40 +88,43 @@ const filteredProducts = products.filter(p => {
 });
 
 
-  const handleSaveProduct = async () => {
-    if (!editingProduct.Name || !editingProduct.Price) {
-      alert('Заполните название и цену');
-      return;
+ const handleSaveProduct = async () => {
+  if (!editingProduct.Name || editingProduct.Price == null) {
+    alert('Заполните название и цену');
+    return;
+  }
+
+  try {
+    const payload = {
+      Name: editingProduct.Name,
+      Price: editingProduct.Price,
+      Description: editingProduct.Description || '',
+      Category: editingProduct.Category || '',
+      Stock: editingProduct.Stock || 0,
+    };
+
+    if (editingProduct.ProductId) {
+      // Обновление существующего продукта с поддержкой нового изображения
+      await updateProduct(
+        editingProduct.ProductId,
+        payload,
+        editingProduct.Image
+      );
+    } else {
+      // Создание нового продукта
+      await createProduct(payload, editingProduct.Image);
     }
 
-    try {
-      if (editingProduct.ProductId) {
-        // Обновление существующего продукта
-        await updateProduct(editingProduct.ProductId, {
-          Name: editingProduct.Name,
-          Price: editingProduct.Price,
-          Description: editingProduct.Description || '',
-          Category: editingProduct.Category || '',
-          Stock: editingProduct.Stock || 0,
-        });
-      } else {
-        // Создание нового продукта
-        await createProduct({
-          Name: editingProduct.Name,
-          Price: editingProduct.Price,
-          Description: editingProduct.Description || '',
-          Category: editingProduct.Category || '',
-          Stock: editingProduct.Stock || 0,
-        });
-      }
-      await loadProducts();
-      setIsEditMode(false);
-      setEditingProduct({});
-    } catch (err) {
-      console.error('Ошибка сохранения продукта:', err);
-      alert('Не удалось сохранить продукт');
-    }
-  };
+    await loadProducts();
+    setIsEditMode(false);
+    setEditingProduct({} as Product); // очищаем редактируемый продукт
+  } catch (err) {
+    console.error('Ошибка сохранения продукта:', err);
+    const message = err instanceof Error ? err.message : String(err);
+    alert('Не удалось сохранить продукт: ' + message);
+  }
+};
+
 
   // Удаление продукта
   const handleDeleteProduct = async (id: number) => {
@@ -268,13 +272,6 @@ const filteredProducts = products.filter(p => {
             <div className="flex items-end justify-between mt-auto">
               <div>
                 <span className="text-2xl font-bold text-gray-900">{price.toLocaleString()} ₽</span>
-                <div className="text-xs text-gray-500 mt-1">
-                  {stock > 0 ? (
-                    <span className="text-green-600">В наличии: {stock} шт.</span>
-                  ) : (
-                    <span className="text-red-500">Нет в наличии</span>
-                  )}
-                </div>
               </div>
               {user ? (
   (user.RoleId === Role.ADMIN || user.RoleId === Role.EMPLOYEE) ? (
@@ -319,7 +316,6 @@ const filteredProducts = products.filter(p => {
     })}
   </div>
 )}
-
 
       {/* Admin Modal */}
       {isEditMode && (
@@ -380,6 +376,32 @@ const filteredProducts = products.filter(p => {
                 />
               </div>
             </div>
+
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Изображение</label>
+              <div className="flex items-center">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={e => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setEditingProduct({ ...editingProduct, Image: file });
+                    }
+                  }}
+                  className="hidden"
+                  id="upload-image"
+                />
+                <label
+                  htmlFor="upload-image"
+                  className="cursor-pointer bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+                >
+                  Загрузить изображение
+                </label>
+                {editingProduct.Image && <span className="ml-3 text-sm text-gray-700">{editingProduct.Image.name}</span>}
+              </div>
+            </div>
+
             <div className="flex justify-end gap-3 mt-6">
               <button 
                 onClick={() => { setIsEditMode(false); setEditingProduct({}); }}
