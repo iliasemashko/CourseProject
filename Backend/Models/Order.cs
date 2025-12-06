@@ -11,7 +11,7 @@ namespace SantehOrders.API.Models
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
         public List<OrderItem> Items { get; set; } = new();
-        public int AssignedEmployeeId { get; set; }
+        public int? AssignedEmployeeId { get; set; }
         public User AssignedEmployee { get; set; }
     }
 }

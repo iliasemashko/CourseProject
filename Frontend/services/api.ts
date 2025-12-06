@@ -142,7 +142,7 @@ export async function getOrders(): Promise<Order[]> {
       TotalAmount: o.totalAmount ?? o.TotalAmount,
       CreatedAt: o.createdAt ?? o.CreatedAt,
       UpdatedAt: o.updatedAt ?? o.UpdatedAt,
-      UserName: o.fullName ?? o.FullName ?? `User ${o.userId ?? o.UserId}`,
+      UserName: o.userName ?? o.UserName ?? `User ${o.userId ?? o.UserId}`,
       Items: Array.isArray(o.items)
         ? o.items.map((i: any) => ({
             OrderItemId: i.orderItemId ?? i.OrderItemId,

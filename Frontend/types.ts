@@ -54,15 +54,17 @@ export interface OrderItem {
 export interface Order {
   OrderId: number;
   UserId: number;
+  UserName?: string;
   StatusId: OrderStatus;
   TotalAmount: number;
   CreatedAt: string;
   UpdatedAt: string;
-  UserName?: string;
-  Items?: OrderItem[];
   AssignedToUserId?: number;
   AssignedToName?: string;
+  Items?: OrderItem[];
+  OrderType?: string;
 }
+
 
 export interface Comment {
   commentId: number;

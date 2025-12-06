@@ -108,10 +108,28 @@ namespace SantehOrders.API.Controllers
         [Authorize]
         public async Task<IActionResult> Create(CreateOrderDto dto)
         {
+            if (dto.UserId <= 0 || !await _context.Users.AnyAsync(u => u.UserId == dto.UserId))
+            {
+                return BadRequest("Пользователь не найден");
+            }
+
+            if (dto.Items == null || !dto.Items.Any())
+            {
+                return BadRequest("Список товаров пуст");
+            }
+
             var productIds = dto.Items.Select(i => i.ProductId).ToList();
             var products = await _context.Products
                 .Where(p => productIds.Contains(p.ProductId))
                 .ToDictionaryAsync(p => p.ProductId);
+
+            foreach (var item in dto.Items)
+            {
+                if (!products.ContainsKey(item.ProductId))
+                {
+                    return BadRequest($"Товар с ID {item.ProductId} не найден");
+                }
+            }
 
             var order = new Order
             {
@@ -119,6 +137,7 @@ namespace SantehOrders.API.Controllers
                 StatusId = 1,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow,
+                AssignedEmployeeId = null,
                 Items = dto.Items.Select(i => new OrderItem
                 {
                     ProductId = i.ProductId,
@@ -140,11 +159,17 @@ namespace SantehOrders.API.Controllers
                 CreatedAt = order.CreatedAt,
                 UpdatedAt = order.UpdatedAt,
                 TotalAmount = order.TotalAmount,
+                UserName = (await _context.Users
+                            .Where(u => u.UserId == order.UserId)
+                            .Select(u => u.FullName)
+                            .FirstOrDefaultAsync()) ?? "",
+                AssignedToName = null,
                 Items = order.Items.Select(i => new OrderItemDto
                 {
                     ProductId = i.ProductId,
                     ProductName = products[i.ProductId].Name,
-                    Quantity = i.Quantity
+                    Quantity = i.Quantity,
+                    Price = i.Price
                 }).ToList()
             };
 
