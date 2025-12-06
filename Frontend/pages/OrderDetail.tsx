@@ -255,14 +255,14 @@ const OrderDetail: React.FC<OrderDetailProps> = ({ user }) => {
                     <div className="px-6 py-4 bg-amber-50 border-b border-amber-100">
                         <div className="flex flex-wrap items-center gap-6">
                             <h3 className="text-sm font-semibold text-amber-900 uppercase">Контактная информация:</h3>
-                            {customer.Phone && (
+                            {/* {customer.Phone && (
                                 <div className="flex items-center gap-2 text-amber-900">
                                     <Phone size={18} className="text-amber-700" />
                                     <a href={`tel:${customer.Phone}`} className="font-medium hover:underline">
                                         {customer.Phone}
                                     </a>
                                 </div>
-                            )}
+                            )} */}
                             <div className="flex items-center gap-2 text-amber-900">
                                 <Mail size={18} className="text-amber-700" />
                                 <a href={`mailto:${customer.Email}`} className="font-medium hover:underline">

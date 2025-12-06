@@ -6,11 +6,9 @@ export enum Role {
 
 export enum OrderStatus {
   CREATED = 1,      // Создан
-  PROCESSING = 2,   // Принят к обработке
-  ASSEMBLED = 3,    // Собран
-  READY = 4,        // Готов к выдаче
-  COMPLETED = 5,    // Выполнен (Архив)
-  CANCELLED = 6     // Отменён
+  PROCESSING = 2,   // В обработке
+  COMPLETED = 3,    // Выполнен
+  CANCELLED = 4     // Отменён
 }
 
 export interface User {

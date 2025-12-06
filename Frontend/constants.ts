@@ -37,16 +37,12 @@ export const STATUS_LABELS: Record<OrderStatus, string> = {
   [OrderStatus.CREATED]: 'Новый',
   [OrderStatus.PROCESSING]: 'В обработке',
   [OrderStatus.ASSEMBLED]: 'Собран',
-  [OrderStatus.READY]: 'Готов к выдаче',
-  [OrderStatus.COMPLETED]: 'Выполнен',
-  [OrderStatus.CANCELLED]: 'Отменён',
+  [OrderStatus.COMPLETED]: 'Выполнен'
 };
 
 export const STATUS_COLORS: Record<OrderStatus, string> = {
   [OrderStatus.CREATED]: 'bg-blue-100 text-blue-800',
   [OrderStatus.PROCESSING]: 'bg-yellow-100 text-yellow-800',
   [OrderStatus.ASSEMBLED]: 'bg-purple-100 text-purple-800',
-  [OrderStatus.READY]: 'bg-orange-100 text-orange-800',
-  [OrderStatus.COMPLETED]: 'bg-green-100 text-green-800',
-  [OrderStatus.CANCELLED]: 'bg-red-100 text-red-800',
+  [OrderStatus.COMPLETED]: 'bg-green-100 text-green-800'
 };
