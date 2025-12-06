@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { User, Role } from '../types';
-import { updateUser } from '../services/api';
+import { updateUser, updateLocalUser } from '../services/api';
 import { User as UserIcon, Save, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -35,7 +35,13 @@ const Profile: React.FC<ProfileProps> = ({ user, setUser }) => {
       }
 
       const result = await updateUser(updated);
+      
+      // Update local storage so data persists on refresh
+      updateLocalUser(result);
+      
+      // Update application state
       setUser(result);
+      
       setMessage('Профиль успешно обновлен');
       setTimeout(() => setMessage(''), 3000);
     } catch (err) {

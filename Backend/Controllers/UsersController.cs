@@ -80,8 +80,16 @@ namespace SantehOrders.API.Controllers
 
             await _context.SaveChangesAsync();
 
-            return NoContent();
+            return Ok(new
+            {
+                user.UserId,
+                user.FullName,
+                user.Email,
+                user.RoleId,
+                user.CreatedAt
+            });
         }
+
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteUser(int id)
