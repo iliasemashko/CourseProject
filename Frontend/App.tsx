@@ -52,17 +52,17 @@
 //     <HashRouter>
 //       <div className="min-h-screen bg-slate-50 font-sans">
 //         <Navbar user={user} cartCount={cart.reduce((a, b) => a + b.quantity, 0)} onLogout={() => setUser(null)} />
-        
+
 //         <Routes>
 //           <Route path="/" element={<Catalog user={user} addToCart={addToCart} />} />
 //           <Route path="/cart" element={<Cart cart={cart} updateQuantity={updateQuantity} removeFromCart={removeFromCart} clearCart={clearCart} user={user} />} />
 //           <Route path="/login" element={<Login setUser={setUser} />} />
 //           <Route path="/register" element={<Login setUser={setUser} />} />
-          
+
 //           <Route path="/orders" element={user ? <Orders user={user} /> : <Navigate to="/login" />} />
 //           <Route path="/orders/:id" element={user ? <OrderDetail user={user} /> : <Navigate to="/login" />} />
 //           <Route path="/profile" element={user ? <Profile user={user} setUser={setUser} /> : <Navigate to="/login" />} />
-          
+
 //           <Route path="/dashboard" element={
 //             user && user.RoleId === Role.ADMIN ? <Dashboard /> : <Navigate to="/" />
 //           } />
@@ -89,10 +89,11 @@ import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
 import { getCurrentUser, logoutUser } from './services/api';
 import { User, CartItem, Product, Role } from './types';
+import Register from './pages/Register';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
-  
+
   // Initialize cart from localStorage
   const [cart, setCart] = useState<CartItem[]>(() => {
     try {
@@ -149,17 +150,18 @@ const App: React.FC = () => {
     <HashRouter>
       <div className="min-h-screen bg-slate-50 font-sans">
         <Navbar user={user} cartCount={cart.reduce((a, b) => a + b.quantity, 0)} onLogout={handleLogout} />
-        
+
         <Routes>
           <Route path="/" element={<Catalog user={user} addToCart={addToCart} />} />
           <Route path="/cart" element={<Cart cart={cart} updateQuantity={updateQuantity} removeFromCart={removeFromCart} clearCart={clearCart} user={user} />} />
+
           <Route path="/login" element={<Login setUser={setUser} />} />
-          <Route path="/register" element={<Login setUser={setUser} />} />
-          
+          <Route path="/register" element={<Register setUser={setUser} />} />  // ← исправлено
+
           <Route path="/orders" element={user ? <Orders user={user} /> : <Navigate to="/login" />} />
           <Route path="/orders/:id" element={user ? <OrderDetail user={user} /> : <Navigate to="/login" />} />
           <Route path="/profile" element={user ? <Profile user={user} setUser={setUser} /> : <Navigate to="/login" />} />
-          
+
           <Route path="/dashboard" element={
             user && user.RoleId === Role.ADMIN ? <Dashboard /> : <Navigate to="/" />
           } />
